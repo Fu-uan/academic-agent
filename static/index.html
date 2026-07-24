@@ -1,0 +1,3031 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学术智能体 · 文献检索 · Stata实证 · 综述导出</title>
+<link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<style>
+/* ── CSS 变量 ── */
+:root {
+  --primary: #1a56db;
+  --primary-dark: #143fa8;
+  --primary-light: #e8f0fe;
+  --accent: #f59e0b;
+  --bg: #f3f6fc;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── Header ── */
+.header {
+  background: linear-gradient(135deg, var(--primary), #1e40af);
+  color: #fff;
+  padding: 32px 24px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+.header h1 i { margin-right: 10px; }
+.header p {
+  font-size: 14px;
+  opacity: 0.85;
+  font-weight: 300;
+}
+
+/* ── Container ── */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ── Search Section ── */
+.search-section {
+  margin-top: -20px;
+  position: relative;
+  z-index: 10;
+}
+.search-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 24px;
+}
+.search-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.search-input-wrap {
+  flex: 1;
+  min-width: 280px;
+  position: relative;
+}
+.search-input-wrap i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+.search-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  transition: border-color 0.2s;
+  outline: none;
+  background: var(--bg);
+}
+.search-input:focus {
+  border-color: var(--primary);
+  background: #fff;
+}
+.btn-search {
+  padding: 12px 28px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-search:hover { background: var(--primary-dark); }
+.btn-search:active { transform: scale(0.97); }
+.btn-search:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Filters ── */
+.filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.filter-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.filter-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.btn-year {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #fff;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-year:hover { border-color: var(--primary); color: var(--primary); }
+.btn-year.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+.year-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.year-custom input {
+  width: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+}
+.year-custom input:focus { border-color: var(--primary); }
+.year-custom span { color: var(--text-secondary); font-size: 13px; }
+
+/* ── Database Buttons ── */
+.db-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.btn-db {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text);
+}
+.btn-db:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.btn-db.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.btn-db .db-icon { font-size: 16px; }
+.btn-db .db-name { font-weight: 500; }
+.btn-db .db-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.08);
+}
+.btn-db.active .db-badge { background: rgba(255,255,255,0.2); }
+
+/* ── Journal Filter ── */
+.journal-filter-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.journal-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: #fff;
+  min-width: 200px;
+  max-width: 400px;
+  cursor: pointer;
+}
+.journal-select option {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.journal-select option:checked {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+.journal-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.btn-sm {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #f8f9fa;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-sm:hover { background: #e9ecef; }
+
+/* ── Journal Filter Buttons ── */
+.journal-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.btn-journal {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.btn-journal:hover { border-color: var(--primary); color: var(--primary); }
+.btn-journal.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.btn-journal-clear {
+  background: none;
+  border-color: transparent;
+  color: var(--danger);
+  font-size: 11px;
+}
+.btn-journal-clear:hover { background: #fef2f2; }
+
+/* ── Module Selector ── */
+.module-selector {
+  margin-top: 24px;
+  text-align: center;
+}
+.module-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.module-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 40px 24px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
+  text-align: center;
+}
+.module-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border-color: var(--primary);
+}
+.module-card .module-icon {
+  font-size: 48px;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+.module-card h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.module-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.module-card .module-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.btn-back {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+.btn-back:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 16px 0;
+}
+.btn-page {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+  transition: all 0.2s;
+}
+.btn-page:hover { border-color: var(--primary); color: var(--primary); }
+.btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-page.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.page-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 0 8px;
+}
+
+/* ── Select All ── */
+.select-all-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+}
+.select-all-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+.btn-link {
+  padding: 2px 8px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.btn-link:hover { color: var(--primary-dark); }
+
+/* ── Variable Checkbox Group ── */
+.var-check-group {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  font-size: 12px;
+}
+.var-check-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.1s;
+}
+.var-check-item:hover { background: var(--primary-light); }
+.var-check-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.var-check-item label {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Results ── */
+.results-section { margin-top: 24px; padding-bottom: 40px; }
+
+/* Stats bar */
+.stats-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stats-bar .stats-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.stats-bar .stats-info strong { color: var(--text); }
+.stats-bar .batch-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-batch {
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-batch:hover { border-color: var(--primary); color: var(--primary); }
+.btn-batch:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-batch.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.btn-batch.primary:hover { background: var(--primary-dark); }
+
+/* Paper Card */
+.paper-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  transition: box-shadow 0.2s, transform 0.1s;
+  border-left: 3px solid transparent;
+}
+.paper-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+.paper-card.selected {
+  border-left-color: var(--primary);
+  background: #f8faff;
+}
+.paper-card .card-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.paper-card .checkbox-wrap {
+  padding-top: 2px;
+}
+.paper-card .checkbox-wrap input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+.paper-card .card-body { flex: 1; min-width: 0; }
+.paper-card .paper-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+.paper-card .paper-title a {
+  color: var(--primary);
+  text-decoration: none;
+}
+.paper-card .paper-title a:hover { text-decoration: underline; }
+.paper-card .paper-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.paper-card .paper-meta .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.paper-card .paper-meta .meta-item i { font-size: 12px; width: 14px; text-align: center; }
+.paper-card .paper-authors {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Badges */
+.rank-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.rank-q1 { background: #dcfce7; color: #166534; }
+.rank-q2 { background: #dbeafe; color: #1e40af; }
+.rank-q3 { background: #fef9c3; color: #854d0e; }
+.rank-q4 { background: #f3f4f6; color: #6b7280; }
+.type-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--border);
+  color: var(--text-secondary);
+}
+.oa-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 500;
+}
+
+/* Card actions */
+.paper-card .card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.btn-action {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+.btn-action:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.btn-action.success {
+  border-color: var(--success);
+  color: var(--success);
+  background: #f0fdf4;
+}
+.btn-action i { font-size: 11px; }
+
+/* ── Abstract / Translation panel ── */
+.abstract-panel {
+  margin-top: 10px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  display: none;
+}
+.abstract-panel.show { display: block; }
+.abstract-panel .abstract-text { margin-bottom: 8px; }
+.abstract-panel .translation-text {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  color: var(--text);
+}
+
+/* ── Citation panel ── */
+.cite-panel {
+  margin-top: 10px;
+  padding: 12px 16px;
+  background: #fffbeb;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fde68a;
+  font-size: 13px;
+  line-height: 1.7;
+  display: none;
+  position: relative;
+}
+.cite-panel.show { display: block; }
+.cite-panel .cite-text {
+  font-family: "Times New Roman", "STSong", serif;
+  color: var(--text);
+  padding-right: 80px;
+}
+.cite-panel .cite-copy-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 4px 12px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cite-panel .cite-copy-btn:hover { background: var(--primary-dark); }
+.cite-panel .cite-copy-btn.copied { background: var(--success); }
+
+/* ── Loading ── */
+.loading {
+  display: none;
+  text-align: center;
+  padding: 60px 20px;
+}
+.loading.show { display: block; }
+.loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading p { color: var(--text-secondary); font-size: 14px; }
+
+/* ── No results ── */
+.no-results {
+  display: none;
+  text-align: center;
+  padding: 60px 20px;
+}
+.no-results.show { display: block; }
+.no-results .icon { font-size: 48px; color: var(--border); margin-bottom: 16px; }
+.no-results h3 { font-size: 18px; margin-bottom: 8px; }
+.no-results p { color: var(--text-secondary); font-size: 14px; max-width: 500px; margin: 0 auto; }
+.no-results .expand-info {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fffbeb;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fde68a;
+  display: inline-block;
+  text-align: left;
+}
+.no-results .expand-info strong { color: var(--warning); }
+
+/* ── Toast ── */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 14px;
+  box-shadow: var(--shadow-lg);
+  animation: slideIn 0.3s ease;
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.info { background: var(--primary); }
+.toast.warning { background: var(--warning); }
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 28px;
+  max-width: 700px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.modal-box h3 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-box .close-btn {
+  float: right;
+  border: none;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.modal-box .close-btn:hover { color: var(--text); }
+.modal-box .modal-citations {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.modal-box .modal-citations cite {
+  display: block;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #fffbeb;
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #fde68a;
+  font-family: "Times New Roman", "STSong", serif;
+  font-size: 13px;
+  line-height: 1.6;
+  position: relative;
+}
+.modal-box .modal-citations cite .copy-btn {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  padding: 2px 8px;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+.modal-box .modal-citations cite .copy-btn:hover { background: #fde68a; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .header h1 { font-size: 22px; }
+  .search-row { flex-direction: column; }
+  .search-input-wrap { min-width: 0; }
+  .btn-search { width: 100%; justify-content: center; }
+  .filter-row { flex-direction: column; align-items: flex-start; }
+  .db-row { flex-direction: column; }
+  .btn-db { width: 100%; }
+  .paper-card { padding: 16px; }
+  .paper-card .card-header { flex-direction: row; }
+  .stats-bar { flex-direction: column; align-items: flex-start; }
+  .toast-container { left: 20px; right: 20px; }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Database info tooltip ── */
+.db-tooltip {
+  display: none;
+  position: absolute;
+  background: #1e293b;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  max-width: 260px;
+  z-index: 100;
+  line-height: 1.5;
+}
+.btn-db:hover + .db-tooltip { display: block; }
+
+/* ── Translated terms highlight ── */
+.term-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #dbeafe;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--primary);
+  margin: 2px;
+}
+
+/* ── Footer ── */
+.footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+.footer a { color: var(--primary); text-decoration: none; }
+
+/* ── Chat UI ── */
+.chat-section {
+  margin-top: -20px;
+  position: relative;
+  z-index: 10;
+  display: block;
+}
+.chat-section.hidden { display: none; }
+.search-section:not(.chat-done) { display: none; }
+.search-section.chat-done {
+  display: block;
+  margin-top: 24px;
+}
+.chat-search-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0 16px;
+}
+.chat-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.chat-messages {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 20px 20px 12px;
+}
+.chat-msg {
+  display: flex;
+  margin-bottom: 14px;
+  animation: fadeInMsg 0.3s ease;
+}
+@keyframes fadeInMsg {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.chat-msg.assistant { justify-content: flex-start; }
+.chat-msg.user { justify-content: flex-end; }
+.chat-bubble {
+  max-width: 80%;
+  padding: 10px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+.chat-msg.assistant .chat-bubble {
+  background: #f0f4ff;
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+.chat-msg.user .chat-bubble {
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-bubble strong { font-weight: 600; }
+.chat-bubble code {
+  font-size: 12px;
+  padding: 2px 6px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 4px;
+  word-break: break-all;
+}
+.chat-msg.assistant .chat-bubble code { background: rgba(26,86,219,0.1); }
+.chat-input-area {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+}
+.chat-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.chat-opt-btn {
+  padding: 7px 16px;
+  border: 1.5px solid var(--primary);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chat-opt-btn:hover {
+  background: var(--primary);
+  color: #fff;
+}
+.chat-opt-btn:active { transform: scale(0.96); }
+.chat-text-input {
+  display: flex;
+  gap: 8px;
+}
+.chat-text-input input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.chat-text-input input:focus {
+  border-color: var(--primary);
+}
+.chat-text-input button {
+  padding: 10px 22px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.chat-text-input button:hover { background: var(--primary-dark); }
+.chat-text-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+}
+.chat-loading .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  animation: dotPulse 1.2s infinite;
+}
+.chat-loading .dot:nth-child(2) { animation-delay: 0.2s; }
+.chat-loading .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.3; }
+  40% { opacity: 1; }
+}
+.chat-done-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #f0fdf4;
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  font-size: 13px;
+  color: #166534;
+}
+.chat-done-bar.show { display: flex; }
+.chat-done-bar button {
+  padding: 4px 12px;
+  border: 1px solid #86efac;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  color: #166534;
+}
+.chat-done-bar button:hover { background: #dcfce7; }
+
+@media (max-width: 768px) {
+  .chat-bubble { max-width: 90%; }
+  .chat-messages { max-height: 340px; padding: 14px; }
+}
+
+/* ── Analysis / Review Section ── */
+.analysis-section {
+  margin-top: 24px;
+  display: none;
+}
+.analysis-section.show { display: block; }
+.analysis-header {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.analysis-header .stat {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.analysis-header .stat strong { color: var(--text); font-size: 15px; }
+.review-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 24px;
+  margin-bottom: 16px;
+}
+.review-card h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--primary);
+}
+.review-card h3 i { margin-right: 8px; }
+.review-editor {
+  width: 100%;
+  min-height: 300px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  font-size: 14px;
+  line-height: 1.8;
+  font-family: "Times New Roman", "STSong", serif;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.review-editor:focus { border-color: var(--primary); }
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.chart-box {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  height: 340px;
+}
+.chart-box h4 {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.chart-box .chart-container {
+  width: 100%;
+  height: 290px;
+}
+.analysis-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+@media (max-width: 768px) {
+  .chart-grid { grid-template-columns: 1fr; }
+  .chart-box { height: 300px; }
+}
+</style>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <h1><i class="fas fa-robot"></i>学术智能体 · Agent</h1>
+  <p>多源学术检索 · LLM智能分析 · 标准引文导出 · 综述生成 · Stata实证</p>
+</header>
+
+<div class="container">
+
+<!-- Module Selector -->
+<div class="module-selector" id="moduleSelector">
+  <div class="module-cards">
+    <div class="module-card" onclick="selectModule('literature')">
+      <div class="module-icon"><i class="fas fa-book-open"></i></div>
+      <h3>文献检索</h3>
+      <p>多源学术检索 · LLM智能分析 · 综述生成 · Markdown导出</p>
+      <span class="module-badge">OpenAlex · arXiv · Google Scholar</span>
+    </div>
+    <div class="module-card" onclick="selectModule('stata')">
+      <div class="module-icon"><i class="fas fa-chart-bar"></i></div>
+      <h3>Stata 实证分析</h3>
+      <p>上传数据 · 配置方法 · 自动执行 · LLM结果解读</p>
+      <span class="module-badge">面板回归 · 工具变量 · DID · 中介效应</span>
+    </div>
+  </div>
+</div>
+
+<!-- Literature Module -->
+<div id="literatureModule" style="display:none;">
+  <!-- Module header with back button -->
+  <div class="module-header">
+    <button class="btn-back" onclick="showModuleSelector()"><i class="fas fa-arrow-left"></i> 返回</button>
+    <span><i class="fas fa-book-open"></i> 文献检索模块</span>
+  </div>
+
+  <!-- Chat Section -->
+  <section class="chat-section" id="chatSection">
+    <div class="chat-card">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-area">
+        <div class="chat-options" id="chatOptions"></div>
+        <div class="chat-text-input">
+          <input type="text" id="chatInput" placeholder="输入你的回答..." autocomplete="off">
+          <button id="chatSendBtn" onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i> 发送</button>
+        </div>
+      </div>
+    </div>
+    <div class="chat-done-bar" id="chatDoneBar">
+      <i class="fas fa-check-circle"></i> 搜索完成，LLM 分析结果如上
+      <button onclick="restartChat()"><i class="fas fa-redo"></i> 重新对话</button>
+    </div>
+  </section>
+
+  <!-- Search Section -->
+  <section class="search-section" id="searchSection">
+    <div class="search-card">
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" class="search-input" id="searchInput"
+               placeholder="输入研究主题或关键词，如：deep learning、数字经济、machine learning in healthcare..."
+               autocomplete="off">
+      </div>
+      <button class="btn-search" id="searchBtn" onclick="doSearch()">
+        <i class="fas fa-paper-plane"></i> 检索
+      </button>
+    </div>
+
+    <!-- Year Filter -->
+    <div class="filter-row">
+      <span class="filter-label"><i class="fas fa-calendar"></i> 发表年份</span>
+      <select id="yearStart" onchange="yearChanged()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:#fff;">
+        <option value="">起始年</option>
+      </select>
+      <span style="color:var(--text-secondary);font-size:13px;">—</span>
+      <select id="yearEnd" onchange="yearChanged()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:#fff;">
+        <option value="">结束年</option>
+      </select>
+      <button class="btn-sm" onclick="clearYear()"><i class="fas fa-times"></i> 不限</button>
+      <span class="filter-label" style="margin-left:8px;"><i class="fas fa-sort"></i> 排序</span>
+      <select id="sortSelect" onchange="sortChanged()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:#fff;">
+        <option value="relevance">相关度</option>
+        <option value="citations">引用量</option>
+        <option value="date">发表时间</option>
+      </select>
+    </div>
+
+    <!-- Database Selector -->
+    <div class="filter-row" style="border-top: none; padding-top: 8px; margin-top: 8px;">
+      <span class="filter-label"><i class="fas fa-database"></i> 数据源</span>
+      <div class="db-row" id="dbSelector">
+        <button class="btn-db active" data-db="openalex" onclick="selectDb(this)">
+          <i class="fas fa-globe db-icon"></i>
+          <span class="db-name">OpenAlex</span>
+          <span class="db-badge">综合</span>
+        </button>
+        <button class="btn-db" data-db="arxiv" onclick="selectDb(this)">
+          <i class="fas fa-graduation-cap db-icon"></i>
+          <span class="db-name">arXiv</span>
+          <span class="db-badge">预印本</span>
+        </button>
+        <button class="btn-db" data-db="google_scholar" onclick="selectDb(this)">
+          <i class="fas fa-google db-icon"></i>
+          <span class="db-name">Google Scholar</span>
+          <span class="db-badge">综合</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Journal Filter -->
+    <div class="filter-row" style="border-top: none; padding-top: 8px; margin-top: 4px;">
+      <span class="filter-label"><i class="fas fa-filter"></i> 期刊筛选 <span class="journal-count" id="journalCount">未选</span></span>
+      <div class="journal-grid" id="journalFilter">
+        <button class="btn-journal" data-journal="中国社会科学" onclick="toggleJournal(this)">中国社会科学</button>
+        <button class="btn-journal" data-journal="中国人民大学学报" onclick="toggleJournal(this)">中国人民大学学报</button>
+        <button class="btn-journal" data-journal="学术月刊" onclick="toggleJournal(this)">学术月刊</button>
+        <button class="btn-journal" data-journal="社会科学" onclick="toggleJournal(this)">社会科学</button>
+        <button class="btn-journal" data-journal="统计研究" onclick="toggleJournal(this)">统计研究</button>
+        <button class="btn-journal" data-journal="社会学研究" onclick="toggleJournal(this)">社会学研究</button>
+        <button class="btn-journal" data-journal="人口研究" onclick="toggleJournal(this)">人口研究</button>
+        <button class="btn-journal" data-journal="中国人口科学" onclick="toggleJournal(this)">中国人口科学</button>
+        <button class="btn-journal" data-journal="管理学报" onclick="toggleJournal(this)">管理学报</button>
+        <button class="btn-journal" data-journal="管理科学学报" onclick="toggleJournal(this)">管理科学学报</button>
+        <button class="btn-journal" data-journal="中国管理科学" onclick="toggleJournal(this)">中国管理科学</button>
+        <button class="btn-journal" data-journal="管理工程学报" onclick="toggleJournal(this)">管理工程学报</button>
+        <button class="btn-journal" data-journal="中国人才" onclick="toggleJournal(this)">中国人才</button>
+        <button class="btn-journal" data-journal="经济研究" onclick="toggleJournal(this)">经济研究</button>
+        <button class="btn-journal" data-journal="管理世界" onclick="toggleJournal(this)">管理世界</button>
+        <button class="btn-journal" data-journal="经济学" onclick="toggleJournal(this)">经济学</button>
+        <button class="btn-journal" data-journal="数量经济技术经济研究" onclick="toggleJournal(this)">数量经济技术经济研究</button>
+        <button class="btn-journal" data-journal="经济理论与经济管理" onclick="toggleJournal(this)">经济理论与经济管理</button>
+        <button class="btn-journal" data-journal="政治经济学评论" onclick="toggleJournal(this)">政治经济学评论</button>
+        <button class="btn-journal" data-journal="运筹与管理" onclick="toggleJournal(this)">运筹与管理</button>
+        <button class="btn-journal" data-journal="世界经济" onclick="toggleJournal(this)">世界经济</button>
+        <button class="btn-journal" data-journal="世界经济文汇" onclick="toggleJournal(this)">世界经济文汇</button>
+        <button class="btn-journal" data-journal="农业经济问题" onclick="toggleJournal(this)">农业经济问题</button>
+        <button class="btn-journal" data-journal="中国农村经济" onclick="toggleJournal(this)">中国农村经济</button>
+        <button class="btn-journal" data-journal="南开管理评论" onclick="toggleJournal(this)">南开管理评论</button>
+        <button class="btn-journal" data-journal="中国工业经济" onclick="toggleJournal(this)">中国工业经济</button>
+        <button class="btn-journal" data-journal="管理科学" onclick="toggleJournal(this)">管理科学</button>
+        <button class="btn-journal" data-journal="管理评论" onclick="toggleJournal(this)">管理评论</button>
+        <button class="btn-journal" data-journal="预测" onclick="toggleJournal(this)">预测</button>
+        <button class="btn-journal" data-journal="国际贸易问题" onclick="toggleJournal(this)">国际贸易问题</button>
+        <button class="btn-journal" data-journal="国际经贸探索" onclick="toggleJournal(this)">国际经贸探索</button>
+        <button class="btn-journal" data-journal="财贸经济" onclick="toggleJournal(this)">财贸经济</button>
+        <button class="btn-journal" data-journal="税务研究" onclick="toggleJournal(this)">税务研究</button>
+        <button class="btn-journal" data-journal="金融研究" onclick="toggleJournal(this)">金融研究</button>
+        <button class="btn-journal" data-journal="国际金融研究" onclick="toggleJournal(this)">国际金融研究</button>
+        <button class="btn-journal" data-journal="金融经济学研究" onclick="toggleJournal(this)">金融经济学研究</button>
+        <button class="btn-journal" data-journal="系统工程理论与实践" onclick="toggleJournal(this)">系统工程理论与实践</button>
+        <button class="btn-journal" data-journal="系统工程学报" onclick="toggleJournal(this)">系统工程学报</button>
+        <button class="btn-journal" data-journal="系统管理学报" onclick="toggleJournal(this)">系统管理学报</button>
+        <button class="btn-journal" data-journal="计算机学报" onclick="toggleJournal(this)">计算机学报</button>
+        <button class="btn-journal" data-journal="软件学报" onclick="toggleJournal(this)">软件学报</button>
+        <button class="btn-journal" data-journal="自动化学报" onclick="toggleJournal(this)">自动化学报</button>
+        <button class="btn-journal" data-journal="环境科学学报" onclick="toggleJournal(this)">环境科学学报</button>
+        <button class="btn-journal" data-journal="环境科学" onclick="toggleJournal(this)">环境科学</button>
+        <button class="btn-journal" data-journal="中国环境科学" onclick="toggleJournal(this)">中国环境科学</button>
+        <button class="btn-journal" data-journal="会计研究" onclick="toggleJournal(this)">会计研究</button>
+        <button class="btn-journal" data-journal="浙江大学学报(工学版)" onclick="toggleJournal(this)">浙江大学学报(工学版)</button>
+        <button class="btn-journal" data-journal="应用基础与工程科学学报" onclick="toggleJournal(this)">应用基础与工程科学学报</button>
+        <button class="btn-journal" data-journal="自然科学史研究" onclick="toggleJournal(this)">自然科学史研究</button>
+        <button class="btn-journal btn-journal-clear" onclick="clearJournalFilter()"><i class="fas fa-times"></i> 清除</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /literatureModule -->
+
+<!-- Results Section -->
+<section class="results-section">
+  <!-- Stats bar -->
+  <div class="stats-bar" id="statsBar" style="display:none;">
+    <div class="stats-info" id="statsInfo">共找到 <strong>0</strong> 篇相关文献</div>
+    <div class="select-all-row">
+      <label class="select-all-label">
+        <input type="checkbox" id="selectAllCheck" onchange="toggleSelectAllPage(this)"> 全选本页
+      </label>
+      <button class="btn-link" onclick="selectAllResults()">全选所有文献</button>
+      <button class="btn-link" onclick="clearAllSelection()">清空选择</button>
+    </div>
+    <div class="batch-actions">
+      <button class="btn-batch" id="exportSelectedBtn" onclick="exportSelected()" disabled>
+        <i class="fas fa-file-export"></i> 导出引文 (<span id="selectedCount">0</span>)
+      </button>
+      <button class="btn-batch" onclick="exportSelectedMarkdown()" disabled id="exportMdBtn">
+        <i class="fas fa-file-code"></i> 下载选中 Markdown
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>正在检索学术文献...</p>
+  </div>
+
+  <!-- No results -->
+  <div class="no-results" id="noResults">
+    <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
+    <h3>未找到相关文献</h3>
+    <p id="noResultsMsg">请尝试调整关键词或扩大检索范围</p>
+    <div class="expand-info" id="expandInfo" style="display:none;"></div>
+  </div>
+
+  <!-- Results list -->
+  <div id="resultsList"></div>
+  <!-- Pagination -->
+  <div class="pagination" id="pagination" style="display:none;"></div>
+</section>
+
+<!-- Analysis Section -->
+<section class="analysis-section" id="analysisSection">
+  <div class="analysis-header" id="analysisHeader">
+    <span class="stat">分析 <strong id="analysisPaperCount">0</strong> 篇文献 · 跨度 <strong id="analysisYearRange">-</strong></span>
+    <span class="stat">识别 <strong id="analysisClusterCount">0</strong> 个研究方向</span>
+  </div>
+
+  <!-- 综述编辑区 -->
+  <div class="review-card">
+    <h3><i class="fas fa-pen-fancy"></i>文献综述</h3>
+    <textarea class="review-editor" id="reviewEditor" placeholder="点击「开始分析」生成综述..."></textarea>
+    <div class="analysis-actions">
+      <button class="btn-batch primary" id="exportReviewBtn" onclick="exportReview()" disabled>
+        <i class="fas fa-download"></i> 导出综述
+      </button>
+      <button class="btn-batch" onclick="regenerateReview()">
+        <i class="fas fa-sync"></i> 重新生成
+      </button>
+    </div>
+  </div>
+
+  <!-- 4 个图表 -->
+  <div class="chart-grid">
+    <div class="chart-box">
+      <h4><i class="fas fa-chart-line"></i> 年发文量趋势</h4>
+      <div class="chart-container" id="chartTrend"></div>
+    </div>
+    <div class="chart-box">
+      <h4><i class="fas fa-project-diagram"></i> 关键词共现网络</h4>
+      <div class="chart-container" id="chartCooccurrence"></div>
+    </div>
+    <div class="chart-box">
+      <h4><i class="fas fa-bubble-chart"></i> 文献时间线</h4>
+      <div class="chart-container" id="chartTimeline"></div>
+    </div>
+    <div class="chart-box">
+      <h4><i class="fas fa-sankey"></i> 主题桑基图</h4>
+      <div class="chart-container" id="chartSankey"></div>
+    </div>
+  </div>
+</section>
+
+<!-- P2: 数据分析面板 -->
+<section class="analysis-section" id="p2Section">
+  <div class="analysis-header">
+    <span class="stat"><i class="fas fa-flask"></i> <strong>数据实证分析</strong> · 上传数据 → 配置方法 → 执行Stata → 结果解读</span>
+  </div>
+
+  <!-- Step 1: 数据上传 -->
+  <div class="review-card">
+    <h3><i class="fas fa-upload"></i> 步骤一：上传数据</h3>
+    <div style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:30px;text-align:center;cursor:pointer" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+      <i class="fas fa-cloud-upload-alt" style="font-size:36px;color:var(--text-secondary);margin-bottom:8px;display:block"></i>
+      <p style="color:var(--text-secondary);font-size:14px;">点击上传 CSV 或 Excel 文件（≤50MB）</p>
+      <input type="file" id="fileInput" accept=".csv,.xlsx" style="display:none" onchange="handleFileUpload(this.files)">
+    </div>
+    <div id="uploadPreview" style="display:none;margin-top:12px;">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">已上传: <span id="fileName"></span> · <span id="fileRows"></span> 行 · <span id="fileCols"></span> 列</p>
+      <div style="overflow-x:auto;font-size:12px;" id="previewTable"></div>
+    </div>
+  </div>
+
+  <!-- Step 2: 方法配置 -->
+  <div class="review-card">
+    <h3><i class="fas fa-cog"></i> 步骤二：配置分析方法</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">实证方法 <span style="font-size:11px;color:var(--text-secondary);font-weight:400;">(可多选)</span></label>
+        <div id="stataMethod" class="var-check-group"></div>
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">运行模式</label>
+        <select id="stataMode" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;" onchange="updateStataConfig()">
+          <option value="single">单模型</option>
+          <option value="combination">排列组合遍历</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:12px;">
+      <div><label style="font-size:12px;color:var(--text-secondary);">因变量 Y <span style="font-size:10px;color:var(--text-secondary);">(可多选)</span></label>
+        <div id="varY" class="var-check-group"></div>
+      </div>
+      <div><label style="font-size:12px;color:var(--text-secondary);">自变量 X <span style="font-size:10px;color:var(--text-secondary);">(可多选)</span></label>
+        <div id="varX" class="var-check-group"></div>
+      </div>
+      <div><label style="font-size:12px;color:var(--text-secondary);">中介 M / 处理变量</label>
+        <div id="varM" class="var-check-group"></div>
+      </div>
+      <div><label style="font-size:12px;color:var(--text-secondary);">控制变量</label>
+        <div id="varControls" class="var-check-group"></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="btn-batch primary" id="runStataBtn" onclick="runStata()" disabled><i class="fas fa-play"></i> 执行 Stata</button>
+      <span id="stataStatus" style="font-size:13px;color:var(--text-secondary);"></span>
+    </div>
+  </div>
+
+  <!-- Step 3: 结果 -->
+  <div class="review-card" id="stataResultCard" style="display:none;">
+    <h3><i class="fas fa-table"></i> 步骤三：结果</h3>
+    <div id="stataResultTable" style="overflow-x:auto;font-size:13px;"></div>
+    <div id="stataInterpretation" style="margin-top:16px;"></div>
+    <div class="analysis-actions" style="margin-top:12px;">
+      <button class="btn-batch primary" onclick="exportChapter()"><i class="fas fa-file-export"></i> 导出论文章节</button>
+      <button class="btn-batch" onclick="downloadStataLog()"><i class="fas fa-download"></i> 下载 Stata Log</button>
+      <button class="btn-batch" onclick="downloadDoFile()"><i class="fas fa-file-code"></i> 下载 Do 文件</button>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>学术智能体 v2.0 · 数据来源: <a href="https://openalex.org" target="_blank">OpenAlex</a> · <a href="https://arxiv.org" target="_blank">arXiv</a> · <a href="https://scholar.google.com" target="_blank">Google Scholar</a></p>
+</footer>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Export Modal -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal-box">
+    <button class="close-btn" onclick="closeModal('exportModal')">&times;</button>
+    <h3><i class="fas fa-file-alt"></i> 导出引文 (GB/T 7714-2015)</h3>
+    <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-batch primary" onclick="copyAllModalCitations()">
+        <i class="fas fa-copy"></i> 一键复制全部
+      </button>
+    </div>
+    <div class="modal-citations" id="modalCitations"></div>
+  </div>
+</div>
+
+<!-- About Modal -->
+<div class="modal-overlay" id="aboutModal">
+  <div class="modal-box">
+    <button class="close-btn" onclick="closeModal('aboutModal')">&times;</button>
+    <h3><i class="fas fa-info-circle"></i> 关于 PaperAgent</h3>
+    <div style="font-size:14px;line-height:1.8;">
+      <p><strong>PaperAgent</strong> 是一款面向高校学生的文献检索智能体，提供以下核心功能：</p>
+      <ul style="margin:12px 0 0 20px;">
+        <li><strong>多数据库检索</strong>：支持开放学术、知网、Web of Science、万方、维普（知网等需校园网访问）</li>
+        <li><strong>GB/T 7714 引文</strong>：自动生成国家标准格式引文，一键复制</li>
+        <li><strong>学术翻译</strong>：内置理工/人文社科专业术语库，精准翻译学术术语</li>
+        <li><strong>智能扩词</strong>：无结果时自动扩展关键词重新检索</li>
+        <li><strong>批量导出</strong>：支持多篇文献引文批量导出</li>
+      </ul>
+      <p style="margin-top:12px;">数据来源：<a href="https://openalex.org" target="_blank">OpenAlex</a> 开放学术索引数据库</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let currentData = null;
+let selectedDOIs = new Set();
+
+// ── Utility ──
+function $(id) { return document.getElementById(id); }
+
+function showToast(msg, type = 'info') {
+  const container = $('toastContainer');
+  const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle', warning: 'fa-exclamation-triangle' };
+  const icon = icons[type] || 'fa-info-circle';
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="fas ${icon}"></i> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+function closeModal(id) { $(id).classList.remove('show'); }
+
+// ── Year Filter（下拉框）──
+const NOW_YEAR = new Date().getFullYear();
+
+function initYearSelects() {
+  const startSel = $('yearStart');
+  const endSel = $('yearEnd');
+  for (let y = NOW_YEAR; y >= 1950; y--) {
+    const o1 = document.createElement('option');
+    o1.value = y; o1.textContent = y;
+    const o2 = document.createElement('option');
+    o2.value = y; o2.textContent = y;
+    startSel.appendChild(o1);
+    endSel.appendChild(o2);
+  }
+}
+
+function getYearRange() {
+  const s = $('yearStart').value;
+  const e = $('yearEnd').value;
+  const start = s ? parseInt(s) : null;
+  const end = e ? parseInt(e) : null;
+  return { start, end };
+}
+
+function yearChanged() {
+  if (currentData) doSearch();
+}
+
+function clearYear() {
+  $('yearStart').value = '';
+  $('yearEnd').value = '';
+  if (currentData) doSearch();
+}
+
+// ── 数据库切换 ──
+function selectDb(btn) {
+  document.querySelectorAll('.btn-db').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── 期刊筛选（按钮多选）──
+let selectedJournals = new Set();
+
+function toggleJournal(btn) {
+  const journal = btn.dataset.journal;
+  if (selectedJournals.has(journal)) {
+    selectedJournals.delete(journal);
+    btn.classList.remove('active');
+  } else {
+    selectedJournals.add(journal);
+    btn.classList.add('active');
+  }
+  updateJournalCount();
+  if (currentData) doSearch();
+}
+
+function getSelectedJournals() {
+  return Array.from(selectedJournals);
+}
+
+function updateJournalCount() {
+  $('journalCount').textContent = selectedJournals.size > 0
+    ? `已选 ${selectedJournals.size} 个`
+    : '未选';
+}
+
+function clearJournalFilter() {
+  selectedJournals.clear();
+  document.querySelectorAll('.btn-journal').forEach(b => b.classList.remove('active'));
+  updateJournalCount();
+  if (currentData) doSearch();
+}
+
+// ── 模块选择器 ──
+function selectModule(module) {
+  $('moduleSelector').style.display = 'none';
+  if (module === 'literature') {
+    $('literatureModule').style.display = 'block';
+    $('p2Section').style.display = 'none';
+    if ($('chatMessages').children.length === 0) initChat();
+  } else if (module === 'stata') {
+    $('literatureModule').style.display = 'none';
+    $('p2Section').style.display = 'block';
+  }
+}
+function showModuleSelector() {
+  $('moduleSelector').style.display = 'block';
+  $('literatureModule').style.display = 'none';
+  $('p2Section').style.display = 'none';
+}
+
+// ── 分页 ──
+let currentPage = 1;
+function renderPagination(total, page, perPage) {
+  const totalPages = Math.ceil(total / perPage) || 1;
+  const pag = document.getElementById('pagination');
+  if (!pag) return;
+  if (totalPages <= 1) { pag.style.display = 'none'; return; }
+  pag.style.display = 'flex';
+  let html = `<button class="btn-page" onclick="doSearch(${page - 1})" ${page <= 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> 上一页</button>`;
+  html += `<span class="page-info">第 ${page}/${totalPages} 页</span>`;
+  html += `<button class="btn-page" onclick="doSearch(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>下一页 <i class="fas fa-chevron-right"></i></button>`;
+  pag.innerHTML = html;
+}
+
+function sortChanged() {
+  if (currentData) doSearch();
+}
+
+// ── 搜索 ──
+function getSelectedDb() {
+  const active = document.querySelector('.btn-db.active');
+  return active ? active.dataset.db : 'openalex';
+}
+
+// ── Search ──
+async function doSearch(page = 1) {
+  const keyword = $('searchInput').value.trim();
+  if (!keyword) {
+    showToast('请输入检索关键词', 'warning');
+    return;
+  }
+
+  const db = getSelectedDb();
+  const yearRange = getYearRange();
+  const journals = getSelectedJournals();
+  const sortBy = $('sortSelect').value;
+
+  // 非 openalex 数据库处理
+  if (db === 'google_scholar') {
+    showDatabaseInfo(db);
+    return;
+  }
+
+  // UI 状态
+  $('resultsList').innerHTML = '';
+  $('statsBar').style.display = 'none';
+  $('noResults').classList.remove('show');
+  $('loading').classList.add('show');
+  $('searchBtn').disabled = true;
+
+  try {
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        keyword: keyword,
+        year_start: yearRange.start,
+        year_end: yearRange.end,
+        database: db,
+        page: page,
+        per_page: 20,
+        journals: journals.length > 0 ? journals : undefined,
+        sort_by: sortBy
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || '检索请求失败');
+    }
+
+    const data = await resp.json();
+    currentData = data;
+    selectedDOIs.clear();
+    updateSelectedCount();
+
+    $('loading').classList.remove('show');
+
+    if (data.total === 0 || (data.results && data.results.length === 0)) {
+      showNoResults(data);
+      return;
+    }
+
+    renderResults(data);
+    $('statsBar').style.display = 'flex';
+    $('statsInfo').innerHTML = `共找到 <strong>${data.total}</strong> 篇相关文献`;
+    currentPage = page;
+    renderPagination(data.total, page, 20);
+    if (data.expanded_from) {
+      showToast(`原关键词"${data.expanded_from}"未找到结果，已自动扩展为"${data.expanded_query}"`, 'warning');
+    }
+    if (data.results && data.results.length > 0) {
+      enableAnalysis();
+      // 后台自动启动文献分析（不跳转、不阻塞）
+      setTimeout(() => startAnalysis(), 300);
+    }
+  } catch (err) {
+    $('loading').classList.remove('show');
+    showToast(err.message || '检索失败，请稍后重试', 'error');
+  } finally {
+    $('searchBtn').disabled = false;
+  }
+}
+
+// ── Non-OpenAlex DB info ──
+function showDatabaseInfo(db) {
+  const dbNames = {
+    arxiv: { name: 'arXiv', url: 'https://arxiv.org' },
+    google_scholar: { name: 'Google Scholar', url: 'https://scholar.google.com' }
+  };
+  const info = dbNames[db] || { name: db, url: '#' };
+  const now = new Date().getFullYear();
+  const yearRange = getYearRange();
+  const keyword = $('searchInput').value.trim();
+  const yearStr = yearRange.start ? `${yearRange.start}-${yearRange.end}` : '不限';
+
+  // 使用OpenAlex镜像检索，同时显示数据库信息
+  const msg = db === 'arxiv'
+    ? `arXiv 预印本正在以 OpenAlex 镜像检索"${keyword}"（${yearStr}）`
+    : db === 'google_scholar'
+    ? `Google Scholar 正在以 OpenAlex 镜像检索"${keyword}"（${yearStr}）`
+    : `《${info.name}》需在校园网环境下登录访问。已为您转用开放学术数据库检索"${keyword}"（${yearStr}），以下为镜像结果`;
+
+  $('resultsList').innerHTML = '';
+  $('statsBar').style.display = 'none';
+  $('noResults').classList.remove('show');
+  $('loading').classList.add('show');
+  $('searchBtn').disabled = true;
+
+  // 自动切换检索
+  setTimeout(() => {
+    // 用openalex检索并标记来源
+    fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        keyword: keyword,
+        year_start: yearRange.start,
+        year_end: yearRange.end,
+        database: 'openalex',
+        page: 1,
+        per_page: 20
+      })
+    }).then(r => r.json()).then(data => {
+      currentData = data;
+      selectedDOIs.clear();
+      updateSelectedCount();
+      $('loading').classList.remove('show');
+
+      if (data.total === 0) {
+        showNoResults(data);
+        return;
+      }
+
+      renderResults(data, msg);
+      $('statsBar').style.display = 'flex';
+      $('statsInfo').innerHTML = `共找到 <strong>${data.total}</strong> 篇相关文献（通过开放学术镜像）`;
+    }).catch(err => {
+      $('loading').classList.remove('show');
+      showToast(err.message, 'error');
+      $('searchBtn').disabled = false;
+    });
+  }, 500);
+}
+
+// ── Render ──
+function renderResults(data, dbNote = '') {
+  const list = $('resultsList');
+  list.innerHTML = '';
+
+  if (dbNote) {
+    const noteDiv = document.createElement('div');
+    noteDiv.style.cssText = 'padding:10px 16px;background:#fffbeb;border-radius:8px;margin-bottom:12px;font-size:13px;border:1px solid #fde68a;';
+    noteDiv.innerHTML = `<i class="fas fa-info-circle" style="color:var(--warning)"></i> ${dbNote}`;
+    list.appendChild(noteDiv);
+  }
+
+  data.results.forEach((paper, idx) => {
+    const card = document.createElement('div');
+    card.className = 'paper-card';
+    card.id = `paper-${idx}`;
+    card.dataset.doi = paper.doi || '';
+    card.dataset.index = idx;
+
+    // Authors
+    const authorsText = paper.authors && paper.authors.length > 0
+      ? paper.authors.slice(0, 5).join(', ') + (paper.authors.length > 5 ? ', 等' : '')
+      : '未标注作者';
+
+    // Rank badge
+    const rankClass = paper.rank ? `rank-${paper.rank.toLowerCase()}` : '';
+    const rankLabel = paper.rank ? `${paper.rank} · ${paper.rank_description}` : '';
+
+    // Journal / source
+    const journalText = paper.journal || paper.type;
+
+    // Urls
+    const titleLink = paper.doi
+      ? `https://doi.org/${paper.doi}`
+      : (paper.urls && paper.urls[0] ? paper.urls[0] : '#');
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="checkbox-wrap">
+          <input type="checkbox" onchange="toggleSelect(this, '${paper.doi || ''}')" ${paper.doi && selectedDOIs.has(paper.doi) ? 'checked' : ''}>
+        </div>
+        <div class="card-body">
+          <div class="paper-title">
+            <a href="${titleLink}" target="_blank">${escapeHtml(paper.title)}</a>
+          </div>
+          <div class="paper-authors">
+            <i class="fas fa-user-pen"></i> ${escapeHtml(authorsText)}
+          </div>
+          <div class="paper-meta">
+            <span class="meta-item"><i class="fas fa-book"></i> ${escapeHtml(journalText)}</span>
+            <span class="meta-item"><i class="fas fa-calendar"></i> ${paper.year || '未知'}</span>
+            <span class="meta-item"><i class="fas fa-quote-right"></i> 引用 ${paper.cited_by}</span>
+            ${rankLabel ? `<span class="meta-item"><span class="rank-badge ${rankClass}">${rankLabel}</span></span>` : ''}
+            <span class="meta-item"><span class="type-badge">${escapeHtml(paper.type)}</span></span>
+            ${paper.is_oa ? '<span class="meta-item"><span class="oa-badge"><i class="fas fa-lock-open"></i> 开放获取</span></span>' : ''}
+          </div>
+          <div class="card-actions">
+            <button class="btn-action" onclick="showCitation('${idx}')">
+              <i class="fas fa-quote-left"></i> 引文
+            </button>
+            ${paper.abstract ? `<button class="btn-action" onclick="toggleAbstract('${idx}')">
+              <i class="fas fa-align-left"></i> 摘要
+            </button>` : ''}
+            ${paper.abstract ? `<button class="btn-action" onclick="translateAbstract('${idx}')">
+              <i class="fas fa-language"></i> 翻译
+            </button>` : ''}
+            <button class="btn-action" onclick="copyDOI('${paper.doi || ''}')">
+              <i class="fas fa-copy"></i> DOI
+            </button>
+            <button class="btn-action" onclick="downloadPaper(${idx})">
+              <i class="fas fa-download"></i> 下载 PDF
+            </button>
+          </div>
+          <!-- Abstract Panel -->
+          <div class="abstract-panel" id="abstract-${idx}">
+            <div class="abstract-text" id="abstract-text-${idx}">${escapeHtml(paper.abstract || '')}</div>
+            <div class="translation-text" id="translation-${idx}" style="display:none;"></div>
+          </div>
+          <!-- Citation Panel -->
+          <div class="cite-panel" id="cite-${idx}">
+            <div class="cite-text" id="cite-text-${idx}"></div>
+            <button class="cite-copy-btn" onclick="copyCitationText('${idx}')">
+              <i class="fas fa-copy"></i> 复制
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+  enableAnalysis();
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ── Select ──
+function toggleSelect(checkbox, doi) {
+  if (doi) {
+    if (checkbox.checked) selectedDOIs.add(doi);
+    else selectedDOIs.delete(doi);
+    // 高亮卡片
+    const card = checkbox.closest('.paper-card');
+    if (card) card.classList.toggle('selected', checkbox.checked);
+    updateSelectedCount();
+  }
+}
+
+function updateSelectedCount() {
+  const count = selectedDOIs.size;
+  $('selectedCount').textContent = count;
+  $('exportSelectedBtn').disabled = count === 0;
+  $('exportMdBtn').disabled = count === 0;
+}
+
+// ── Citation ──
+async function showCitation(idx) {
+  const paper = currentData.results[idx];
+  if (!paper) return;
+
+  const citePanel = $(`cite-${idx}`);
+  const citeText = $(`cite-text-${idx}`);
+  const copyBtn = citePanel.querySelector('.cite-copy-btn');
+
+  if (citePanel.classList.contains('show')) {
+    citePanel.classList.remove('show');
+    return;
+  }
+
+  // 如果已经加载了引文
+  if (citeText.dataset.loaded) {
+    citePanel.classList.add('show');
+    return;
+  }
+
+  showToast('正在生成引文...', 'info');
+
+  try {
+    const resp = await fetch('/api/cite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dois: [paper.doi] })
+    });
+    const data = await resp.json();
+
+    if (data.citations && data.citations[0] && data.citations[0].success) {
+      citeText.textContent = data.citations[0].citation;
+    } else {
+      // 离线生成
+      citeText.textContent = generateLocalCitation(paper);
+    }
+    citeText.dataset.loaded = '1';
+    citePanel.classList.add('show');
+    copyBtn.textContent = '<i class="fas fa-copy"></i> 复制';
+    copyBtn.classList.remove('copied');
+  } catch (err) {
+    citeText.textContent = generateLocalCitation(paper);
+    citeText.dataset.loaded = '1';
+    citePanel.classList.add('show');
+  }
+}
+
+function generateLocalCitation(paper) {
+  const authors = paper.authors || [];
+  let authorStr = authors.length > 0
+    ? authors.slice(0, 3).join(', ') + (authors.length > 3 ? ', 等' : '')
+    : '[佚名]';
+  const title = paper.title || '未知标题';
+  const journal = paper.journal || '未知期刊';
+  const year = paper.year || '';
+  const doi = paper.doi || '';
+  const typeMap = { '期刊论文':'J','综述':'J','会议论文':'C','学位论文':'D','书籍':'M','标准':'S','报告':'R' };
+  const marker = typeMap[paper.type] || 'J';
+  let cite = `${authorStr}. ${title}[${marker}]. ${journal}, ${year}.`;
+  if (doi) cite += ` DOI: ${doi}.`;
+  return cite;
+}
+
+async function copyCitationText(idx) {
+  const text = $(`cite-text-${idx}`).textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = $(`cite-${idx}`).querySelector('.cite-copy-btn');
+    btn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+    btn.classList.add('copied');
+    showToast('引文已复制到剪贴板', 'success');
+  } catch (e) {
+    // fallback
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    showToast('引文已复制到剪贴板', 'success');
+  }
+}
+
+function copyDOI(doi) {
+  if (!doi) { showToast('该文献暂无DOI', 'warning'); return; }
+  navigator.clipboard.writeText(doi).then(() => {
+    showToast('DOI 已复制', 'success');
+  }).catch(() => {
+    showToast('复制失败', 'error');
+  });
+}
+
+// ── PDF 下载（多源回退）──
+async function downloadPaper(idx) {
+  const paper = currentData.results[idx];
+  if (!paper) return;
+  showToast('正在获取文献...', 'info');
+  try {
+    const resp = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: paper.source || '',
+        id: paper.doi || '',
+        doi: paper.doi || '',
+        oa_url: paper.oa_url || '',
+      })
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || '下载失败');
+    }
+    const ct = resp.headers.get('content-type') || '';
+    if (ct.includes('json')) {
+      const data = await resp.json();
+      if (data.url) window.open(data.url, '_blank');
+      showToast(data.note || '已打开文献页面', 'info');
+    } else {
+      // PDF 流式下载
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = paper.source === 'arxiv' ? 'pdf' : 'pdf';
+      a.download = `${(paper.doi || paper.title || 'paper').replace(/[/\\?]/g,'_').slice(0, 50)}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('PDF 下载完成', 'success');
+    }
+  } catch (err) {
+    showToast(err.message || '下载失败', 'error');
+    // 回退：打开 OA URL 或 DOI
+    if (paper.oa_url) window.open(paper.oa_url, '_blank');
+    else if (paper.doi) window.open(`https://doi.org/${paper.doi}`, '_blank');
+  }
+}
+
+// ── Abstract & Translation ──
+function toggleAbstract(idx) {
+  const panel = $(`abstract-${idx}`);
+  panel.classList.toggle('show');
+}
+
+async function translateAbstract(idx) {
+  const paper = currentData.results[idx];
+  if (!paper || !paper.abstract) return;
+
+  const panel = $(`abstract-${idx}`);
+  const transDiv = $(`translation-${idx}`);
+
+  panel.classList.add('show');
+
+  // 如果已翻译
+  if (transDiv.dataset.translated) {
+    transDiv.style.display = 'block';
+    return;
+  }
+
+  transDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在翻译...';
+  transDiv.style.display = 'block';
+
+  try {
+    const resp = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: paper.abstract,
+        domain: 'sci-tech' // 默认理工
+      })
+    });
+    const data = await resp.json();
+
+    let html = '<div style="font-weight:600;margin-bottom:6px;color:var(--primary);font-size:12px;"><i class="fas fa-language"></i> 学术翻译</div>';
+
+    if (data.terms_matched && data.terms_matched.length > 0) {
+      html += '<div style="margin-bottom:6px;">';
+      data.terms_matched.forEach(t => {
+        html += `<span class="term-tag">${escapeHtml(t.source)} → ${escapeHtml(t.target)}</span> `;
+      });
+      html += '</div>';
+    }
+
+    if (data.translation !== paper.abstract) {
+      html += `<div>${escapeHtml(data.translation)}</div>`;
+    }
+
+    if (data.note) {
+      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-secondary);">${escapeHtml(data.note)}</div>`;
+    }
+
+    transDiv.innerHTML = html;
+    transDiv.dataset.translated = '1';
+    showToast('翻译完成', 'success');
+  } catch (err) {
+    transDiv.innerHTML = '<div style="color:var(--danger);">翻译服务暂时不可用</div>';
+  }
+}
+
+// ── No Results ──
+function showNoResults(data) {
+  $('noResults').classList.add('show');
+  const msg = $('noResultsMsg');
+  msg.textContent = `未找到与"${data.query || $('searchInput').value}"相关的文献`;
+
+  const expandInfo = $('expandInfo');
+  if (data.expansion_suggestion) {
+    expandInfo.style.display = 'block';
+    expandInfo.innerHTML = `
+      <strong><i class="fas fa-lightbulb"></i> 检索优化建议：</strong>
+      <p style="margin-top:4px;">${escapeHtml(data.expansion_suggestion)}</p>
+    `;
+  } else if (data.alternatives) {
+    expandInfo.style.display = 'block';
+    expandInfo.innerHTML = `
+      <strong><i class="fas fa-lightbulb"></i> 建议：</strong>
+      <p style="margin-top:4px;">${data.note || '请尝试使用其他数据库或调整年份范围'}</p>
+    `;
+  } else {
+    // 本地扩词建议
+    const keyword = $('searchInput').value.trim();
+    expandInfo.style.display = 'block';
+    expandInfo.innerHTML = `
+      <strong><i class="fas fa-lightbulb"></i> 检索优化建议：</strong>
+      <p style="margin-top:4px;">尝试以下方法：<br>
+      1. 使用更宽泛的关键词<br>
+      2. 扩大年份范围<br>
+      3. 使用英文关键词检索（可获得更广泛的国际文献）<br>
+      4. 尝试近义词替换，如 "${keyword}" → <span style="color:var(--primary);font-weight:500;" id="expandSuggestion"></span></p>
+    `;
+    // 异步获取扩词建议
+    fetch('/api/expand', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword: keyword })
+    }).then(r => r.json()).then(data => {
+      if (data.expanded && data.expanded.length > 1) {
+        $('expandSuggestion').textContent = data.expanded.slice(1, 4).join('、');
+      }
+    }).catch(() => {});
+  }
+}
+
+// ── Export ──
+
+function exportSelectedMarkdown() {
+  if (selectedDOIs.size === 0) {
+    showToast('请先选择文献', 'warning');
+    return;
+  }
+  const selectedPapers = (currentData.results || []).filter(p => p.doi && selectedDOIs.has(p.doi));
+  if (selectedPapers.length === 0) {
+    showToast('选中文献暂无DOI信息', 'warning');
+    return;
+  }
+  let md = '# 文献导出\n\n';
+  selectedPapers.forEach((p, i) => {
+    md += `## ${i + 1}. ${p.title || '未知标题'}\n\n`;
+    md += `- **作者**: ${(p.authors || []).slice(0, 5).join(', ')}\n`;
+    md += `- **年份**: ${p.year || '未知'}\n`;
+    md += `- **期刊**: ${p.journal || ''}\n`;
+    md += `- **引用**: ${p.cited_by || 0}\n`;
+    md += `- **DOI**: ${p.doi || ''}\n`;
+    md += `- **类型**: ${p.type || ''}\n\n`;
+    if (p.abstract) md += `**摘要**:\n> ${p.abstract.replace(/\n/g, '\n> ')}\n\n`;
+    md += `---\n\n`;
+  });
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `文献导出_${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`已导出 ${selectedPapers.length} 篇文献为 Markdown`, 'success');
+}
+
+// ── 全选功能 ──
+function toggleSelectAllPage(checkbox) {
+  const papers = currentData?.results || [];
+  papers.forEach(p => {
+    if (p.doi) {
+      if (checkbox.checked) selectedDOIs.add(p.doi);
+      else selectedDOIs.delete(p.doi);
+    }
+  });
+  updateAllCheckboxes(checkbox.checked);
+  updateSelectedCount();
+}
+
+function selectAllResults() {
+  if (!currentData?.results) return;
+  const total = currentData.total || 0;
+  // 先选当前页
+  currentData.results.forEach(p => { if (p.doi) selectedDOIs.add(p.doi); });
+  // 如果只有一页，直接完成
+  if (total <= 20) {
+    updateAllCheckboxes(true);
+    updateSelectedCount();
+    showToast(`已全选 ${selectedDOIs.size} 篇文献`, 'info');
+    return;
+  }
+  showToast(`正在获取全部 ${total} 篇文献的DOI...`, 'info');
+  // 异步拉取后续页面（最多5页=100篇，避免大量请求）
+  const maxPages = Math.min(Math.ceil(total / 20), 5);
+  const fetchPages = [];
+  for (let p = 2; p <= maxPages; p++) {
+    fetchPages.push(
+      fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keyword: $('searchInput').value.trim(),
+          database: getSelectedDb(),
+          page: p,
+          per_page: 20,
+          sort_by: $('sortSelect').value,
+        })
+      }).then(r => r.json()).then(data => {
+        (data.results || []).forEach(pp => { if (pp.doi) selectedDOIs.add(pp.doi); });
+      }).catch(() => {})
+    );
+  }
+  Promise.all(fetchPages).then(() => {
+    updateAllCheckboxes(true);
+    updateSelectedCount();
+    showToast(`已全选 ${selectedDOIs.size} 篇文献（前${maxPages}页）`, 'success');
+  });
+}
+
+function clearAllSelection() {
+  selectedDOIs.clear();
+  updateAllCheckboxes(false);
+  updateSelectedCount();
+}
+
+function updateAllCheckboxes(checked) {
+  document.querySelectorAll('.paper-card input[type="checkbox"]').forEach(cb => {
+    cb.checked = checked;
+    cb.closest('.paper-card')?.classList.toggle('selected', checked);
+  });
+  document.getElementById('selectAllCheck').checked = checked;
+}
+
+async function exportSelected() {
+  const dois = Array.from(selectedDOIs);
+  if (dois.length === 0) {
+    showToast('请先选择文献', 'warning');
+    return;
+  }
+  await fetchAndShowCitations(dois);
+}
+
+async function fetchAndShowCitations(dois) {
+  showToast('正在生成引文...', 'info');
+  const modal = $('exportModal');
+  const container = $('modalCitations');
+  container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;"><i class="fas fa-spinner fa-spin"></i> 加载中...</p>';
+  modal.classList.add('show');
+
+  try {
+    const resp = await fetch('/api/cite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dois: dois })
+    });
+    const data = await resp.json();
+
+    container.innerHTML = '';
+    let allText = '';
+
+    data.citations.forEach((c, i) => {
+      if (c.success) {
+        allText += `[${i + 1}] ${c.citation}\n`;
+        const cite = document.createElement('cite');
+        cite.innerHTML = `[${i + 1}] ${escapeHtml(c.citation)}
+          <button class="copy-btn" onclick="copySingleCitation(this, \`${escapeHtml(c.citation)}\`)">
+            <i class="fas fa-copy"></i> 复制
+          </button>`;
+        container.appendChild(cite);
+      } else {
+        const cite = document.createElement('cite');
+        cite.innerHTML = `[${i + 1}] <span style="color:var(--danger)">${escapeHtml(c.doi)}: ${escapeHtml(c.error || '生成失败')}</span>`;
+        container.appendChild(cite);
+      }
+    });
+
+    // 存储全部文本供一键复制
+    container.dataset.allText = allText;
+  } catch (err) {
+    container.innerHTML = `<p style="color:var(--danger);">生成引文失败: ${err.message}</p>`;
+  }
+}
+
+function copySingleCitation(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+    setTimeout(() => {
+      btn.innerHTML = '<i class="fas fa-copy"></i> 复制';
+    }, 2000);
+  }).catch(() => {
+    showToast('复制失败', 'error');
+  });
+}
+
+function copyAllModalCitations() {
+  const container = $('modalCitations');
+  const text = container.dataset.allText;
+  if (!text) {
+    showToast('没有可复制的引文', 'warning');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('已复制全部引文', 'success');
+  }).catch(() => {
+    showToast('复制失败，请手动选择复制', 'error');
+  });
+}
+
+// ── Keyboard shortcut ──
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.activeElement === $('searchInput')) {
+    doSearch();
+  }
+});
+
+// ── About ──
+function showAbout() {
+  $('aboutModal').classList.add('show');
+}
+
+// ── Chat 对话引导 ──
+let chatState = { session_id: '', state: 0, history: [] };
+let chatLocked = false;
+
+function addChatMessage(role, text, options = []) {
+  const container = $('chatMessages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  
+  // 安全渲染：先 escape HTML，再转换 Markdown 标记
+  let safe = escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/```(.+?)```/gs, '<code>$1</code>')
+    .replace(/\n/g, '<br>');
+  
+  div.innerHTML = `<div class="chat-bubble">${safe}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+
+  // 选项按钮
+  if (options && options.length > 0) {
+    const optDiv = $('chatOptions');
+    optDiv.innerHTML = '';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'chat-opt-btn';
+      btn.textContent = opt;
+      btn.onclick = () => handleChatOption(opt);
+      optDiv.appendChild(btn);
+    });
+    $('chatInput').placeholder = '或输入自定义回答...';
+  }
+}
+
+function showChatLoading(show) {
+  const container = $('chatMessages');
+  const existing = container.querySelector('.chat-loading');
+  if (existing) existing.remove();
+  if (!show) return;
+  const div = document.createElement('div');
+  div.className = 'chat-msg assistant';
+  div.innerHTML = `<div class="chat-bubble"><div class="chat-loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`;
+  div.id = 'chatLoading';
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function handleChatOption(option) {
+  $('chatOptions').innerHTML = '';
+  $('chatInput').value = option;
+  sendChatMessage();
+}
+
+async function sendChatMessage() {
+  if (chatLocked) return;
+  const input = $('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  chatLocked = true;
+  $('chatSendBtn').disabled = true;
+  $('chatOptions').innerHTML = '';
+
+  addChatMessage('user', msg);
+  showChatLoading(true);
+
+  try {
+    const resp = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: msg,
+        session_id: chatState.session_id,
+        state: 0
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.detail || '请求失败');
+    }
+
+    showChatLoading(false);
+
+    // SSE 流式读取
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullReply = '';
+    let assistantDiv = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop(); // 保留不完整的事件
+
+      for (const event of events) {
+        if (!event.startsWith('data: ')) continue;
+        let data;
+        try {
+          data = JSON.parse(event.slice(6));
+        } catch { continue; }
+
+        if (data.type === 'text') {
+          fullReply += data.text;
+          // 更新聊天气泡
+          if (!assistantDiv) {
+            const container = $('chatMessages');
+            const div = document.createElement('div');
+            div.className = 'chat-msg assistant';
+            div.innerHTML = `<div class="chat-bubble"></div>`;
+            container.appendChild(div);
+            assistantDiv = div.querySelector('.chat-bubble');
+            container.scrollTop = container.scrollHeight;
+          }
+          // 简单渲染 markdown 风格
+          let display = fullReply
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+          assistantDiv.innerHTML = display;
+          $('chatMessages').scrollTop = $('chatMessages').scrollHeight;
+        } else if (data.type === 'done') {
+          // 保存到历史
+          chatState.session_id = data.session_id || chatState.session_id;
+          chatState.history.push({ role: 'user', content: msg }, { role: 'assistant', content: fullReply });
+
+          // 如果有关键词，显示搜索卡片
+          if (data.keywords && data.keywords.en_keywords && data.keywords.en_keywords.length > 0) {
+            finishChat(data);
+          }
+        } else if (data.type === 'error') {
+          addChatMessage('assistant', data.text || '抱歉，处理出错');
+        }
+      }
+    }
+  } catch (err) {
+    showChatLoading(false);
+    addChatMessage('assistant', '抱歉，服务暂时不可用，请稍后重试。');
+  } finally {
+    chatLocked = false;
+    $('chatSendBtn').disabled = false;
+  }
+}
+
+function finishChat(data) {
+  // 保持对话区可见，在下方显示搜索结果
+  $('searchSection').classList.add('chat-done');
+  $('chatDoneBar').classList.add('show');
+  
+  // 填入英文关键词到搜索框（中文词在OpenAlex上效果差）
+  const enKeywords = data.keywords.en_keywords || [];
+  const searchVal = enKeywords.length >= 2 
+    ? enKeywords.slice(0, 3).join(' ')
+    : (data.search_query || enKeywords[0] || '');
+  $('searchInput').value = searchVal;
+  
+  // 自动触发检索
+  setTimeout(() => doSearch(), 300);
+}
+
+function restartChat() {
+  chatState = { session_id: '', state: 0, history: [] };
+  $('chatMessages').innerHTML = '';
+  $('chatOptions').innerHTML = '';
+  $('chatDoneBar').classList.remove('show');
+  $('searchSection').classList.remove('chat-done');
+  $('chatInput').value = '';
+  $('searchInput').value = '';
+  // 清空搜索结果
+  $('resultsList').innerHTML = '';
+  currentData = null;
+  initChat();
+}
+
+function initChat() {
+  const greeting = '👋 你好！我是 **学术智能体 Agent**。\n\n我可以帮你：\n1. 📚 **文献检索** — 输入研究方向，我用 OpenAlex/arXiv 多源检索\n2. 🔍 **关键词扩展 + 排序筛选** — 按引用量/时间/相关度排序\n3. 📄 **下载 Markdown / PDF** — 选中文献一键导出\n4. 📊 **自动可视化分析** — 年发文量、关键词共现网络自动生成\n\n试试说：*"帮我查一下数字化转型的文献"*';
+  addChatMessage('assistant', greeting, []);
+}
+
+// Enter 键发送
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.activeElement === $('chatInput')) {
+    sendChatMessage();
+  }
+});
+
+// ── 初始化对话 ──
+window.addEventListener('DOMContentLoaded', () => {
+  fetch('/api/health').catch(() => {});
+  initYearSelects();
+  // Chat 不会在页面加载时初始化，等用户选择文献模块后再 init
+});
+
+// ── Analysis & Charts ──
+let analysisData = null;
+let chartInstances = {};
+
+function enableAnalysis() {
+  // 文献分析已改为自动后台加载，无需启用按钮
+}
+
+async function startAnalysis() {
+  if (!currentData || !currentData.results || currentData.results.length === 0) {
+    showToast('请先检索文献', 'warning');
+    return;
+  }
+  
+  const papers = currentData.results.slice(0, 30);
+  showToast(`后台分析 ${papers.length} 篇文献...`, 'info');
+
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ papers, domain: 'sci-tech' })
+    });
+    
+    if (!resp.ok) throw new Error((await resp.json()).detail || '分析失败');
+    
+    analysisData = await resp.json();
+    renderAnalysis();
+    showToast('文献分析完成，向下滚动可查看图表', 'success');
+  } catch (err) {
+    showToast(err.message || '分析失败', 'error');
+  }
+}
+
+function renderAnalysis() {
+  if (!analysisData) return;
+  
+  $('analysisSection').classList.add('show');
+  
+  // 更新统计
+  $('analysisPaperCount').textContent = analysisData.paper_count || currentData.results.length;
+  const years = analysisData.year_distribution || {};
+  const yearKeys = Object.keys(years);
+  $('analysisYearRange').textContent = yearKeys.length > 0 ? `${Math.min(...yearKeys)}-${Math.max(...yearKeys)}` : '-';
+  $('analysisClusterCount').textContent = (analysisData.clusters || []).length || Object.keys(years).length;
+  
+  // 填充综述
+  if (analysisData.review_text) {
+    $('reviewEditor').value = analysisData.review_text;
+    $('exportReviewBtn').disabled = false;
+  }
+  
+  // 渲染图表
+  setTimeout(() => {
+    renderTrendChart(analysisData.chart_data);
+    renderCooccurrenceChart(analysisData.chart_data);
+    renderTimelineChart(analysisData.chart_data);
+    renderSankeyChart(analysisData.chart_data);
+  }, 200);
+}
+
+// ── ECharts ──
+function getChart(id) {
+  if (chartInstances[id]) chartInstances[id].dispose();
+  const dom = $(id);
+  if (!dom) return null;
+  const chart = echarts.init(dom);
+  chartInstances[id] = chart;
+  return chart;
+}
+
+function renderTrendChart(cd) {
+  if (!cd || !cd.trend) return;
+  const chart = getChart('chartTrend');
+  if (!chart) return;
+  chart.setOption({
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: cd.trend.years, axisLabel: { fontSize: 11 } },
+    yAxis: { type: 'value', name: '发文量' },
+    series: [{
+      type: 'line', data: cd.trend.counts, smooth: true,
+      lineStyle: { color: '#1a56db', width: 2 },
+      areaStyle: { color: 'rgba(26,86,219,0.1)' },
+      symbol: 'circle', symbolSize: 6
+    }],
+    grid: { left: 50, right: 20, top: 20, bottom: 30 }
+  });
+}
+
+function renderCooccurrenceChart(cd) {
+  if (!cd || !cd.cooccurrence) return;
+  const chart = getChart('chartCooccurrence');
+  if (!chart) return;
+  const data = cd.cooccurrence;
+  chart.setOption({
+    tooltip: { formatter: (p) => `${p.name}: ${p.value}` },
+    series: [{
+      type: 'graph', layout: 'force',
+      symbolSize: (v) => Math.max(10, Math.min(40, v / 2)),
+      roam: true,
+      label: { show: true, fontSize: 10 },
+      edgeSymbol: ['none', 'arrow'],
+      edgeLabel: { fontSize: 9 },
+      force: { repulsion: 300, edgeLength: 100 },
+      data: data.nodes,
+      links: data.edges,
+      lineStyle: { opacity: 0.3, width: 1, curveness: 0.2 }
+    }]
+  });
+}
+
+function renderTimelineChart(cd) {
+  if (!cd || !cd.bubble) return;
+  const chart = getChart('chartTimeline');
+  if (!chart) return;
+  const data = cd.bubble;
+  const clusters = [...new Set(data.map(d => d.cluster || '其他'))];
+  const colors = ['#1a56db','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+  const series = clusters.map((c, i) => ({
+    name: c, type: 'scatter',
+    data: data.filter(d => (d.cluster || '其他') === c).map(d => ({
+      value: [d.year, c, d.cited_by || 10],
+      title: d.title || ''
+    })),
+    symbolSize: (v) => Math.max(8, Math.min(50, Math.sqrt(v[2]) * 2)),
+    itemStyle: { color: colors[i % colors.length] }
+  }));
+  chart.setOption({
+    tooltip: { formatter: (p) => `${p.data.title}<br/>引用: ${p.data.value[2]}` },
+    xAxis: { type: 'value', name: '年份' },
+    yAxis: { type: 'category', data: clusters },
+    series,
+    grid: { left: 80, right: 20, top: 10, bottom: 30 }
+  });
+}
+
+function renderSankeyChart(cd) {
+  if (!cd || !cd.sankey) return;
+  const chart = getChart('chartSankey');
+  if (!chart) return;
+  chart.setOption({
+    tooltip: { trigger: 'item', formatter: (p) => `${p.name}: ${p.value}` },
+    series: [{
+      type: 'sankey',
+      layout: 'none',
+      emphasis: { focus: 'adjacency' },
+      data: cd.sankey.nodes,
+      links: cd.sankey.links,
+      lineStyle: { color: 'gradient', curveness: 0.5 }
+    }]
+  });
+}
+
+// ── Export / Regenerate ──
+function exportReview() {
+  const text = $('reviewEditor').value;
+  if (!text) { showToast('暂无综述内容', 'warning'); return; }
+  
+  let md = '# 文献综述\n\n';
+  md += text + '\n\n---\n\n';
+  
+  // 添加参考文献
+  if (currentData && currentData.results) {
+    md += '## 参考文献\n\n';
+    currentData.results.slice(0, 20).forEach((p, i) => {
+      const authors = (p.authors || []).slice(0, 3).join(', ') + ((p.authors || []).length > 3 ? ', 等' : '');
+      md += `[${i+1}] ${authors}. ${p.title}[J]. ${p.journal || ''}, ${p.year || ''}.`;
+      if (p.doi) md += ` DOI: ${p.doi}.`;
+      md += '\n';
+    });
+  }
+  
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '文献综述.md';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('综述已导出', 'success');
+}
+
+function regenerateReview() {
+  analysisData = null;
+  $('analysisSection').classList.remove('show');
+  $('reviewEditor').value = '';
+  $('exportReviewBtn').disabled = true;
+  // 销毁图表
+  Object.values(chartInstances).forEach(c => { try { c.dispose(); } catch(e) {} });
+  chartInstances = {};
+  startAnalysis();
+}
+
+// 窗口大小变化时重绘图表
+window.addEventListener('resize', () => {
+  Object.values(chartInstances).forEach(c => { try { c.resize(); } catch(e) {} });
+});
+
+// 暗色主题检测（ECharts 使用浅色主题）
+document.documentElement.style.colorScheme = 'light';
+
+// ── P2: 数据实证分析 ──
+let uploadedFileData = null;
+let uploadFilePath = '';
+
+async function handleFileUpload(files) {
+  if (!files || !files[0]) return;
+  const file = files[0];
+  if (file.size > 50 * 1024 * 1024) { showToast('文件超过50MB限制', 'error'); return; }
+  
+  $('fileName').textContent = file.name;
+  showToast('正在上传...', 'info');
+  
+  const form = new FormData();
+  form.append('file', file);
+  
+  try {
+    const resp = await fetch('/api/upload', { method: 'POST', body: form });
+    if (!resp.ok) throw new Error((await resp.json()).detail || '上传失败');
+    const data = await resp.json();
+    
+    uploadedFileData = data;
+    uploadFilePath = data.filename;
+    $('fileRows').textContent = data.row_count || 0;
+    $('fileCols').textContent = (data.columns || []).length;
+    
+    // 渲染预览表
+    const previewHtml = renderPreviewTable(data.columns, data.preview);
+    $('previewTable').innerHTML = '<table class="preview-tbl">' + previewHtml + '</table>';
+    $('uploadPreview').style.display = 'block';
+    
+    // 填充变量下拉
+    populateVarSelects(data.columns);
+    
+    // 显示 P2 区
+    $('p2Section').classList.add('show');
+    $('p2Section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showToast('上传成功', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+function renderPreviewTable(columns, rows) {
+  if (!columns || !rows || rows.length === 0) return '';
+  let h = '<tr>';
+  columns.forEach(c => { h += `<th style="padding:4px 8px;border:1px solid var(--border);font-size:11px;white-space:nowrap;">${c.name}</th>`; });
+  h += '</tr>';
+  rows.forEach(row => {
+    h += '<tr>';
+    columns.forEach((c, i) => { h += `<td style="padding:3px 8px;border:1px solid var(--border);font-size:11px;">${row[i] !== undefined && row[i] !== null ? row[i] : ''}</td>`; });
+    h += '</tr>';
+  });
+  return h;
+}
+
+function populateVarSelects(columns) {
+  const names = columns.filter(c => c.type === 'numeric').map(c => c.name);
+  const all = columns.map(c => c.name);
+  
+  ['varY','varX','varM','varControls'].forEach(id => {
+    const container = $(id);
+    container.innerHTML = '';
+    const items = (id === 'varControls' || id === 'varM') ? all : names;
+    if (items.length === 0) {
+      container.innerHTML = '<div style="padding:8px;color:var(--text-secondary);font-size:11px;">无可用变量</div>';
+      return;
+    }
+    items.forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'var-check-item';
+      div.innerHTML = `<input type="checkbox" id="${id}_${n}" value="${n}" onchange="updateStataConfig()">
+        <label for="${id}_${n}">${n}</label>`;
+      container.appendChild(div);
+    });
+  });
+  // 方法选择器
+  populateStataMethods();
+  $('runStataBtn').disabled = false;
+}
+
+function populateStataMethods() {
+  const methods = [
+    ['reg', 'OLS 回归'],
+    ['reghdfe', '高维固定效应'],
+    ['xtreg', '面板固定效应 (FE)'],
+    ['xtreg_re', '面板随机效应 (RE)'],
+    ['ivreg2', '工具变量 IV/2SLS'],
+    ['probit', 'Probit 模型'],
+    ['logit', 'Logit 模型'],
+    ['tobit', 'Tobit 模型'],
+    ['did', '双重差分 DID'],
+    ['eventdd', '事件研究法'],
+    ['staggered', '交错DID'],
+    ['csdid', '多时点DID'],
+    ['psmatch2', '倾向得分匹配'],
+    ['mediator', '中介效应'],
+    ['boottest', '自助法检验'],
+  ];
+  const container = $('stataMethod');
+  container.innerHTML = '';
+  methods.forEach(([val, label]) => {
+    const div = document.createElement('div');
+    div.className = 'var-check-item';
+    div.innerHTML = `<input type="checkbox" id="method_${val}" value="${val}" checked>
+      <label for="method_${val}">${label}</label>`;
+    container.appendChild(div);
+  });
+}
+
+function getCheckedVars(id) {
+  const container = $(id);
+  const checked = [];
+  container.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+    checked.push(cb.value);
+  });
+  return checked;
+}
+
+function updateStataConfig() {
+  // 选中 ivreg2 时，M 框标签改为"工具变量(IV)"
+  const methods = getCheckedVars('stataMethod');
+  const hasIV = methods.includes('ivreg2');
+  const mLabel = document.querySelector('#varM').previousElementSibling;
+  if (mLabel) {
+    mLabel.innerHTML = hasIV
+      ? '工具变量 IV <span style="font-size:10px;color:var(--text-secondary);">(ivreg2)</span>'
+      : '中介 M / 处理变量';
+  }
+  // 单模型模式下方法多选提示
+  const mode = $('stataMode').value;
+  const status = $('stataStatus');
+  if (mode === 'single' && methods.length > 1) {
+    status.textContent = `提示：单模型模式只执行第一个方法（${methods[0]}），其余忽略`;
+  } else {
+    status.textContent = '';
+  }
+}
+
+async function runStata() {
+  const y = getCheckedVars('varY');
+  const x = getCheckedVars('varX');
+  const m = getCheckedVars('varM');
+  const c = getCheckedVars('varControls');
+  
+  if (y.length === 0 || x.length === 0) { showToast('请选择因变量 Y 和自变量 X', 'warning'); return; }
+  
+  const methods = getCheckedVars('stataMethod');
+  const mode = $('stataMode').value;
+  
+  $('runStataBtn').disabled = true;
+  $('runStataBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> 执行中...';
+  $('stataStatus').textContent = 'Stata 正在执行，请稍候...';
+  
+  const endpoint = mode === 'combination' ? '/api/stata/combinations' : '/api/stata/run';
+  const body = mode === 'combination'
+    ? { y_list: y, x_list: x, m_list: m, w_list: [], controls: c, methods: methods, data_file: uploadFilePath }
+    : { command: methods[0] || 'reg', y: y[0], x: x, controls: c, m: m[0] || '', data_file: uploadFilePath };
+  
+  try {
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error((await resp.json()).detail || 'Stata执行失败');
+    const result = await resp.json();
+    renderStataResult(result, methods.join(', '));
+    showToast('Stata 执行完成', 'success');
+  } catch (err) {
+    $('stataStatus').textContent = err.message;
+    showToast(err.message, 'error');
+  } finally {
+    $('runStataBtn').disabled = false;
+    $('runStataBtn').innerHTML = '<i class="fas fa-play"></i> 执行 Stata';
+  }
+}
+
+function renderStataResult(result, method) {
+  $('stataResultCard').style.display = 'block';
+  $('stataStatus').textContent = '';
+  
+  const isCombination = !!result.combinations;
+  const table = result.result_table || result.combinations || [];
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+  html += '<tr style="background:var(--primary);color:#fff;">';
+  if (isCombination) {
+    html += '<th style="padding:6px 10px;">模型</th><th style="padding:6px 10px;">方法</th><th style="padding:6px 10px;">M/IV</th><th style="padding:6px 10px;">系数</th><th style="padding:6px 10px;">p值</th><th style="padding:6px 10px;">显著</th><th style="padding:6px 10px;">R²</th><th style="padding:6px 10px;">控制变量</th>';
+  } else {
+    html += '<th style="padding:6px 10px;">变量</th><th style="padding:6px 10px;">系数</th><th style="padding:6px 10px;">标准误</th><th style="padding:6px 10px;">p值</th><th style="padding:6px 10px;">显著性</th>';
+  }
+  html += '</tr>';
+  
+  if (Array.isArray(table)) {
+    table.forEach((row, idx) => {
+      if (isCombination) {
+        const stars = row.pval < 0.01 ? '***' : row.pval < 0.05 ? '**' : row.pval < 0.1 ? '*' : '';
+        const ctrlStr = (row.controls || []).join(', ') || '无';
+        html += `<tr>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);white-space:nowrap;">${row.formula || '-'}</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px;">${row.method || '-'}</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px;">${row.m || '-'}</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);">${row.coef !== undefined ? row.coef.toFixed(4) : '-'}</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);">${row.pval !== undefined ? row.pval.toFixed(4) : '-'}</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);color:${stars ? '#dc2626' : '#6b7280'};font-weight:600;">${stars}</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px;">${row.r2 !== undefined ? row.r2.toFixed(3) : '-'}</td>
+          <td style="padding:5px 10px;border-bottom:1px solid var(--border);font-size:12px;max-width:200px;">
+            <span class="ctrl-preview" id="ctrl_${idx}" style="cursor:pointer;color:var(--primary);text-decoration:underline;text-underline-offset:2px;" onclick="document.getElementById('ctrl_detail_${idx}').style.display=document.getElementById('ctrl_detail_${idx}').style.display==='none'?'inline':'none'">
+              ${ctrlStr.length > 20 ? ctrlStr.slice(0, 20) + '...' : ctrlStr}
+            </span>
+            <span id="ctrl_detail_${idx}" style="display:none;color:var(--text-secondary);">${ctrlStr}</span>
+          </td>
+        </tr>`;
+      } else {
+        const stars = row.stars || (row.pval < 0.01 ? '***' : row.pval < 0.05 ? '**' : row.pval < 0.1 ? '*' : '');
+        html += `<tr><td style="padding:5px 10px;border-bottom:1px solid var(--border);">${row.var || '-'}</td>`;
+        html += `<td style="padding:5px 10px;border-bottom:1px solid var(--border);">${row.coef !== undefined ? row.coef.toFixed(4) : '-'}</td>`;
+        html += `<td style="padding:5px 10px;border-bottom:1px solid var(--border);">${row.se !== undefined ? row.se.toFixed(4) : '-'}</td>`;
+        html += `<td style="padding:5px 10px;border-bottom:1px solid var(--border);">${row.pval !== undefined ? row.pval.toFixed(4) : '-'}</td>`;
+        html += `<td style="padding:5px 10px;border-bottom:1px solid var(--border);color:${stars ? '#dc2626' : '#6b7280'};font-weight:600;">${stars}</td></tr>`;
+      }
+    });
+  }
+  
+  if (!isCombination && result.stats) {
+    html += `<tr><td colspan="5" style="padding:6px 10px;font-size:12px;color:var(--text-secondary);">`;
+    if (result.stats.r2 !== undefined) html += `R² = ${result.stats.r2.toFixed(4)} · `;
+    if (result.stats.n !== undefined) html += `N = ${result.stats.n} · `;
+    if (result.stats.f_stat !== undefined) html += `F = ${result.stats.f_stat.toFixed(2)}`;
+    html += `</td></tr>`;
+  }
+  
+  html += '</table>';
+  $('stataResultTable').innerHTML = html;
+  
+  // 尝试获取 LLM 解读
+  fetchInterpretation(result);
+}
+
+async function fetchInterpretation(result) {
+  try {
+    const resp = await fetch('/api/stata/interpret', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        result_table: result.result_table || [],
+        method: (result.methods || [getCheckedVars('stataMethod')].flat()).join(', ') || 'reg',
+        stats: result.stats || {}
+      })
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      let html = `<h4 style="color:var(--primary);margin-bottom:8px;"><i class="fas fa-lightbulb"></i> 结果解读</h4>`;
+      if (data.significance) html += `<div style="margin-bottom:8px;"><strong>核心发现：</strong>${data.significance}</div>`;
+      if (data.economic_significance) html += `<div style="margin-bottom:8px;"><strong>经济显著性：</strong>${data.economic_significance}</div>`;
+      if (data.innovation_points) html += `<div style="margin-bottom:8px;"><strong>创新点：</strong>${data.innovation_points}</div>`;
+      if (data.chapter_draft) html += `<div style="margin-top:12px;padding:12px;background:#fffbeb;border-radius:8px;"><strong>论文章节草稿：</strong><br>${data.chapter_draft.replace(/\n/g, '<br>')}</div>`;
+      $('stataInterpretation').innerHTML = html;
+    }
+  } catch(e) {}
+}
+
+function exportChapter() {
+  const text = $('stataInterpretation').textContent || '';
+  let md = '# 实证结果与分析\n\n';
+  md += text + '\n\n---\n\n# 稳健性检验\n\n（此部分需根据具体结果补充）\n\n---\n\n# 进一步分析\n\n（此部分需根据具体结果补充）\n';
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '实证章节草稿.md';
+  a.click();
+  showToast('章节已导出', 'success');
+}
+
+function downloadStataLog() { showToast('Log 文件可从服务器日志目录获取', 'info'); }
+function downloadDoFile() { showToast('Do 文件保存在 Stata 工作目录', 'info'); }
+</script>
+</body>
+</html>
