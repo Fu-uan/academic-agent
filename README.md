@@ -1,124 +1,141 @@
-# 学术智能体 Agent · PaperAgent 2.0
+# Academic Agent · 学术智能体
 
-> 多源学术检索 · LLM 智能分析 · Stata 实证集成 · Markdown/PDF 导出
+> Multi-source academic literature search · LLM-powered analysis · Stata regression integration · Markdown/PDF export
 
-面向高校本硕博学生的一站式学术研究辅助系统。
+面向经济学、管理学、社会学等 **经管社科** 领域的高校本硕博学生与研究者，覆盖论文研究全流程的一站式学术辅助系统。
 
----
-
-## 功能概览
-
-### 📚 文献检索
-- **多源检索**：OpenAlex API + arXiv API + Google Scholar 镜像
-- **Agent 对话**：LangChain Agent 驱动，自然语言理解研究需求，自动提炼关键词、多轮搜索
-- **文献卡片**：标题/作者/年份/期刊/引用量/分区/DOI 链接，摘要展开/收起
-- **排序**：按相关度 / 引用量 / 发表时间
-- **期刊筛选**：50 种核心社科期刊按钮多选
-- **分页**：多页导航
-
-### 📄 导出
-- **下载 PDF**：多源回退（arXiv → OA 链接 → DOI 页面）
-- **下载 Markdown**：选中文献导出含标题/作者/摘要/DOI 的 `.md` 文件
-- **GB/T 7714 引文**：单篇/批量导出国家标准格式
-
-### 📊 可视化分析
-- 自动生成：年发文量趋势 / 关键词共现网络 / 文献时间线 / 主题桑基图
-- 后台冷启动，不阻塞页面操作
-
-### 🔬 Stata 实证分析
-- 上传 CSV/Excel → 配置 Y/X/控制变量 → 自动执行回归
-- **方法支持**：OLS、面板固定效应 (FE/RE)、工具变量 (IV/2SLS)、Probit/Logit、Tobit、DID、中介效应、倾向得分匹配等 15+ 种
-- **排列组合遍历**：多 Y × 多 X × 多方法 × 多控制变量组，自动遍历并排序
-- **本地 Stata**：通过 WSL → PowerShell 桥接调用 Windows 本地 StataMP
-- 结果 LLM 解读（可选）
+> **核心定位**：经管社科实证研究工具链——文献检索 → 计量分析(Stata) → 结果解读 → 论文导出
 
 ---
 
-## 快速启动
+## Features
 
-### 环境要求
+### 📚 Literature Search
+- **Multi-source**: OpenAlex API + arXiv API + Google Scholar (mirror)
+- **Agent Chat**: LangChain Agent driven, understand research needs in natural language, auto-extract keywords, multi-round search
+- **Filters**: Year range, 50+ Chinese core journals (multi-select), sort by relevance/citations/date
+- **Paper Cards**: Title, authors, year, journal, citations, DOI links, expandable abstract
+
+### 📄 Export
+- **Download PDF**: Intelligent fallback (arXiv → OA link → DOI page)
+- **Download Markdown**: Selected papers → `.md` file with title/authors/abstract/DOI
+- **Citations**: GB/T 7714 format, single or batch export
+
+### 📊 Auto Visualization
+- Yearly publication trend · Keyword co-occurrence network · Timeline · Sankey diagram
+- Cold-start in background, no page blocking
+
+### 🔬 Stata Empirical Analysis
+- Upload CSV/Excel → configure Y/X/controls → auto-execute regression
+- **15+ methods**: OLS, Fixed Effects (FE/RE), IV/2SLS, Probit, Logit, Tobit, DID, Mediation, PSM, etc.
+- **Combination traversal**: multiple Y × multiple X × multiple methods × multiple control groups
+- **Local Stata**: WSL → PowerShell bridge to Windows Stata/MP
+
+---
+
+## Quick Start
+
+### Prerequisites
 - Python 3.10+
-- (可选) Windows 本地安装 Stata/MP 用于实证分析
-- (可选) DeepSeek / OpenAI 兼容 API Key 用于 Agent 对话
+- (Optional) A LLM API key for Agent features (DeepSeek, OpenAI, SiliconFlow, etc.)
+- (Optional) Windows Stata/MP for regression analysis
 
-### 安装
+### Installation
 
 ```bash
-cd xueshuagent
+git clone https://github.com/1434554/academic-agent.git
+cd academic-agent
 python -m venv venv
-source venv/bin/activate    # Linux/Mac
-# 或 .\venv\Scripts\activate  # Windows
+
+# Linux/Mac
+source venv/bin/activate
+# Windows
+# .\venv\Scripts\activate
+
 pip install -r requirements.txt
 ```
 
-### 配置环境变量
+### API Configuration
+
+Set your LLM API key and base URL. The system uses an OpenAI-compatible API.
+
+**Option 1: DeepSeek** (cheap, good for Chinese users)
 
 ```bash
-# 必选：用于 Agent 对话和 LLM 翻译
-export LLM_API_KEY="your-api-key"
-export LLM_BASE_URL="https://api.deepseek.com/v1"  # 或其他兼容 API
-
-# 可选：Stata 路径（自动检测）
-# 默认检测 D:\Program Files\StataMP-64.exe
+export LLM_API_KEY="sk-your-deepseek-api-key"
+export LLM_BASE_URL="https://api.deepseek.com/v1"
+export LLM_MODEL="deepseek-chat"
 ```
 
-### 运行
+**Option 2: SiliconFlow** (Chinese domestic, no VPN needed)
 
 ```bash
-cd xueshuagent
+export LLM_API_KEY="sk-your-siliconflow-key"
+export LLM_BASE_URL="https://api.siliconflow.cn/v1"
+export LLM_MODEL="Qwen/Qwen2.5-7B-Instruct"
+```
+
+**Option 3: OpenAI**
+
+```bash
+export LLM_API_KEY="sk-your-openai-key"
+export LLM_BASE_URL="https://api.openai.com/v1"
+export LLM_MODEL="gpt-4o"
+```
+
+### Run
+
+```bash
+cd academic-agent
 source venv/bin/activate
 python -m uvicorn app:app --host 0.0.0.0 --port 8080
 ```
 
-打开浏览器访问 `http://localhost:8080`
+Open **http://localhost:8080** in your browser.
 
 ---
 
-## 技术栈
+## Usage Guide
 
-| 层 | 技术 |
-|----|------|
-| 前端 | 原生 HTML/CSS/JS + ECharts 5 |
-| 后端 | Python FastAPI + httpx |
-| Agent | LangChain 1.3 (create_agent) + LangChain-OpenAI |
-| LLM | DeepSeek / OpenAI 兼容 API |
-| 数据源 | OpenAlex REST API / arXiv Atom API |
-| Stata | WSL → PowerShell → StataMP 桥接 |
-| 通信 | REST API + SSE 流式输出 |
+1. **Start**: Open the page → choose **Literature Search** or **Stata Analysis**
+2. **Search**: Type research topic in chat or use manual search bar
+3. **Filter**: Select year range, journals, data source, sort order
+4. **Select**: Check papers, download PDF or Markdown
+5. **Analyze**: Auto-generated charts appear below search results
+6. **Stata**: Upload data → select variables/methods → execute → view results
 
-## 项目结构
+### Agent Chat Examples
+- `"Find papers on digital transformation"`
+- `"Search for ESG and corporate performance"`
+- `"Run an OLS regression with y_absorb and x_cognition_raw"`
+- `"Export the first 3 papers as markdown"`
+
+---
+
+## Project Structure
 
 ```
-xueshuagent/
-├── app.py              # FastAPI 后端（API 路由 + Stata 集成 + LLM 调用）
-├── agent_setup.py      # LangChain Agent 配置（5 个工具）
+academic-agent/
+├── app.py              # FastAPI backend (API routes + Stata + LLM)
+├── agent_setup.py      # LangChain Agent (5 tools)
 ├── static/
-│   └── index.html      # 单页前端（CSS/JS 全部内联）
-├── requirements.txt    # Python 依赖
-└── .gitignore
+│   └── index.html      # Single-page frontend (CSS/JS inline)
+├── requirements.txt    # Python dependencies
+├── .gitignore
+└── README.md
 ```
 
-## API 端点
+## Tech Stack
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /api/search | 文献检索（OpenAlex / arXiv） |
-| POST | /api/chat | Agent 对话 |
-| POST | /api/chat/stream | Agent 对话（SSE 流式） |
-| POST | /api/cite | 生成 GB/T 7714 引文 |
-| POST | /api/translate | 学术翻译 |
-| POST | /api/expand | 关键词扩写 |
-| POST | /api/analyze | 文献分析 + 综述生成 |
-| POST | /api/download | PDF 下载（多源回退） |
-| POST | /api/upload | 上传 CSV/Excel |
-| POST | /api/stata/run | 单模型 Stata 回归 |
-| POST | /api/stata/combinations | 排列组合遍历 |
-| POST | /api/stata/interpret | LLM 结果解读 |
-| GET | /api/health | 健康检查 |
-
-## 截图
-
-（启动后访问 http://localhost:8080 查看）
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Vanilla HTML/CSS/JS + ECharts 5 |
+| Backend | Python FastAPI + httpx |
+| Agent | LangChain 1.3 (create_agent) |
+| LLM | OpenAI-compatible API (DeepSeek / SiliconFlow / OpenAI) |
+| Data Sources | OpenAlex REST API / arXiv Atom API |
+| Stata | WSL → PowerShell → StataMP bridge |
+| Communication | REST API + SSE streaming |
 
 ## License
 
