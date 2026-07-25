@@ -76,6 +76,8 @@ body {
   padding: 0 16px;
 }
 
+#literatureModule, #p2Section { min-height: 60vh; }
+
 /* ── Search Section ── */
 .search-section {
   margin-top: -20px;
@@ -314,8 +316,12 @@ body {
 
 /* ── Module Selector ── */
 .module-selector {
-  margin-top: 24px;
   text-align: center;
+  padding: 80px 0 40px;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .module-cards {
   display: grid;
@@ -896,12 +902,11 @@ body {
 
 /* ── Footer ── */
 .footer {
-  text-align: center;
-  padding: 24px;
+  text-align: center; padding: 24px;
   color: var(--text-secondary);
   font-size: 13px;
   border-top: 1px solid var(--border);
-  margin-top: 20px;
+  margin-top: 40px;
 }
 .footer a { color: var(--primary); text-decoration: none; }
 
@@ -1330,7 +1335,7 @@ body {
 </div><!-- /literatureModule -->
 
 <!-- Results Section -->
-<section class="results-section">
+<section class="results-section" id="resultsSection">
   <!-- Stats bar -->
   <div class="stats-bar" id="statsBar" style="display:none;">
     <div class="stats-info" id="statsInfo">共找到 <strong>0</strong> 篇相关文献</div>
@@ -1415,6 +1420,10 @@ body {
 
 <!-- P2: 数据分析面板 -->
 <section class="analysis-section" id="p2Section">
+  <div class="module-header">
+    <button class="btn-back" onclick="showModuleSelector()"><i class="fas fa-arrow-left"></i> 返回</button>
+    <span><i class="fas fa-chart-bar"></i> Stata 实证分析</span>
+  </div>
   <div class="analysis-header">
     <span class="stat"><i class="fas fa-flask"></i> <strong>数据实证分析</strong> · 上传数据 → 配置方法 → 执行Stata → 结果解读</span>
   </div>
@@ -1473,6 +1482,9 @@ body {
   <div class="review-card" id="stataResultCard" style="display:none;">
     <h3><i class="fas fa-table"></i> 步骤三：结果</h3>
     <div id="stataResultTable" style="overflow-x:auto;font-size:13px;"></div>
+    <div id="stataInterpretDebug" style="margin-top:12px;padding:10px 12px;border:1px dashed var(--border);border-radius:8px;background:#f8fafc;color:var(--text-secondary);font-size:12px;line-height:1.6;">
+      <strong>Interpret 调试状态：</strong> 尚未触发
+    </div>
     <div id="stataInterpretation" style="margin-top:16px;"></div>
     <div class="analysis-actions" style="margin-top:12px;">
       <button class="btn-batch primary" onclick="exportChapter()"><i class="fas fa-file-export"></i> 导出论文章节</button>
@@ -1571,13 +1583,13 @@ function getYearRange() {
 }
 
 function yearChanged() {
-  if (currentData) doSearch();
+  if (currentData) doSearch(1, { force: true });
 }
 
 function clearYear() {
   $('yearStart').value = '';
   $('yearEnd').value = '';
-  if (currentData) doSearch();
+  if (currentData) doSearch(1, { force: true });
 }
 
 // ── 数据库切换 ──
@@ -1599,7 +1611,7 @@ function toggleJournal(btn) {
     btn.classList.add('active');
   }
   updateJournalCount();
-  if (currentData) doSearch();
+  if (currentData) doSearch(1, { force: true });
 }
 
 function getSelectedJournals() {
@@ -1616,15 +1628,27 @@ function clearJournalFilter() {
   selectedJournals.clear();
   document.querySelectorAll('.btn-journal').forEach(b => b.classList.remove('active'));
   updateJournalCount();
-  if (currentData) doSearch();
+  if (currentData) doSearch(1, { force: true });
 }
 
 // ── 模块选择器 ──
+function hideLiteratureSubsections() {
+  $('resultsSection').style.display = 'none';
+  $('analysisSection').classList.remove('show');
+  $('loading').style.display = 'none';
+}
+
+function showLiteratureSubsections() {
+  $('resultsSection').style.display = 'block';
+}
+
 function selectModule(module) {
   $('moduleSelector').style.display = 'none';
+  hideLiteratureSubsections();
   if (module === 'literature') {
     $('literatureModule').style.display = 'block';
     $('p2Section').style.display = 'none';
+    showLiteratureSubsections();
     if ($('chatMessages').children.length === 0) initChat();
   } else if (module === 'stata') {
     $('literatureModule').style.display = 'none';
@@ -1635,6 +1659,7 @@ function showModuleSelector() {
   $('moduleSelector').style.display = 'block';
   $('literatureModule').style.display = 'none';
   $('p2Section').style.display = 'none';
+  hideLiteratureSubsections();
 }
 
 // ── 分页 ──
@@ -1652,7 +1677,7 @@ function renderPagination(total, page, perPage) {
 }
 
 function sortChanged() {
-  if (currentData) doSearch();
+  if (currentData) doSearch(1, { force: true });
 }
 
 // ── 搜索 ──
@@ -1662,7 +1687,11 @@ function getSelectedDb() {
 }
 
 // ── Search ──
-async function doSearch(page = 1) {
+let lastSearchAt = 0;
+let searchCooldownMs = 6500;
+
+async function doSearch(page = 1, options = {}) {
+  const { force = false } = options;
   const keyword = $('searchInput').value.trim();
   if (!keyword) {
     showToast('请输入检索关键词', 'warning');
@@ -1673,6 +1702,13 @@ async function doSearch(page = 1) {
   const yearRange = getYearRange();
   const journals = getSelectedJournals();
   const sortBy = $('sortSelect').value;
+  const nowTs = Date.now();
+  const isSamePageRefresh = page === currentPage && currentData;
+  if (!force && isSamePageRefresh && (nowTs - lastSearchAt) < searchCooldownMs) {
+    const waitSec = Math.ceil((searchCooldownMs - (nowTs - lastSearchAt)) / 1000);
+    showToast(`请求过快，${waitSec} 秒后再试`, 'warning');
+    return;
+  }
 
   // 非 openalex 数据库处理
   if (db === 'google_scholar') {
@@ -1709,6 +1745,7 @@ async function doSearch(page = 1) {
     }
 
     const data = await resp.json();
+    lastSearchAt = Date.now();
     currentData = data;
     selectedDOIs.clear();
     updateSelectedCount();
@@ -1735,7 +1772,14 @@ async function doSearch(page = 1) {
     }
   } catch (err) {
     $('loading').classList.remove('show');
-    showToast(err.message || '检索失败，请稍后重试', 'error');
+    const msg = err.message || '检索失败，请稍后重试';
+    if (msg.includes('OpenAlex 当日额度已耗尽')) {
+      showToast('OpenAlex 今日免费额度已用完，需要等到午夜 UTC 后恢复。不是你点太快，是上游额度没了。', 'warning');
+    } else if (msg.includes('API速率限制已达上限') || msg.includes('OpenAlex 触发限流')) {
+      showToast(msg, 'warning');
+    } else {
+      showToast(msg, 'error');
+    }
   } finally {
     $('searchBtn').disabled = false;
   }
@@ -2854,7 +2898,7 @@ function populateStataMethods() {
   methods.forEach(([val, label]) => {
     const div = document.createElement('div');
     div.className = 'var-check-item';
-    div.innerHTML = `<input type="checkbox" id="method_${val}" value="${val}" checked>
+    div.innerHTML = `<input type="checkbox" id="method_${val}" value="${val}" onchange="updateStataConfig()">
       <label for="method_${val}">${label}</label>`;
     container.appendChild(div);
   });
@@ -2928,9 +2972,28 @@ async function runStata() {
   }
 }
 
+function setInterpretDebug(message, tone = 'neutral') {
+  const el = $('stataInterpretDebug');
+  if (!el) return;
+  const colors = {
+    neutral: { bg: '#f8fafc', border: 'var(--border)', text: 'var(--text-secondary)' },
+    loading: { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8' },
+    success: { bg: '#ecfdf5', border: '#86efac', text: '#166534' },
+    warning: { bg: '#fffbeb', border: '#fcd34d', text: '#92400e' },
+    error: { bg: '#fef2f2', border: '#fca5a5', text: '#b91c1c' }
+  };
+  const c = colors[tone] || colors.neutral;
+  el.style.background = c.bg;
+  el.style.borderColor = c.border;
+  el.style.color = c.text;
+  el.innerHTML = `<strong>Interpret 调试状态：</strong> ${message}`;
+}
+
 function renderStataResult(result, method) {
   $('stataResultCard').style.display = 'block';
   $('stataStatus').textContent = '';
+  $('stataInterpretation').innerHTML = '';
+  setInterpretDebug('已拿到 Stata 结果，等待触发 interpret 请求…', 'loading');
   
   const isCombination = !!result.combinations;
   const table = result.result_table || result.combinations || [];
@@ -2991,13 +3054,25 @@ function renderStataResult(result, method) {
 
 async function fetchInterpretation(result) {
   try {
+    const isCombination = !!result.combinations;
+    const resultTable = isCombination ? (result.best_result_table || []) : (result.result_table || []);
+    const resultStats = isCombination ? (result.best_stats || {}) : (result.stats || {});
+    const resultMethod = isCombination
+      ? (result.best?.method || (result.methods || [getCheckedVars('stataMethod')].flat()).join(', ') || 'reg')
+      : ((result.methods || [getCheckedVars('stataMethod')].flat()).join(', ') || 'reg');
+    if (!Array.isArray(resultTable) || resultTable.length === 0) {
+      setInterpretDebug('未发起 interpret：当前结果没有可解析的系数表。', 'warning');
+      $('stataInterpretation').innerHTML = '<h4 style="color:var(--primary);margin-bottom:8px;"><i class="fas fa-lightbulb"></i> 结果解读</h4><div style="color:var(--text-secondary);">当前结果没有可解析的系数表，暂不触发解读。</div>';
+      return;
+    }
+    setInterpretDebug(`准备请求 /api/stata/interpret：method=${resultMethod}，result_table=${resultTable.length} 行`, 'loading');
     const resp = await fetch('/api/stata/interpret', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        result_table: result.result_table || [],
-        method: (result.methods || [getCheckedVars('stataMethod')].flat()).join(', ') || 'reg',
-        stats: result.stats || {}
+        result_table: resultTable,
+        method: resultMethod,
+        stats: resultStats
       })
     });
     if (resp.ok) {
@@ -3008,8 +3083,14 @@ async function fetchInterpretation(result) {
       if (data.innovation_points) html += `<div style="margin-bottom:8px;"><strong>创新点：</strong>${data.innovation_points}</div>`;
       if (data.chapter_draft) html += `<div style="margin-top:12px;padding:12px;background:#fffbeb;border-radius:8px;"><strong>论文章节草稿：</strong><br>${data.chapter_draft.replace(/\n/g, '<br>')}</div>`;
       $('stataInterpretation').innerHTML = html;
+      setInterpretDebug(`interpret 成功：返回 significance=${!!data.significance}，chapter_draft=${!!data.chapter_draft}` , 'success');
+    } else {
+      const text = await resp.text();
+      setInterpretDebug(`interpret 失败：HTTP ${resp.status}，响应=${text.slice(0, 200)}`, 'error');
     }
-  } catch(e) {}
+  } catch(e) {
+    setInterpretDebug(`interpret 异常：${e.message || e}`, 'error');
+  }
 }
 
 function exportChapter() {

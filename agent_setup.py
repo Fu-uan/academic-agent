@@ -4,12 +4,63 @@ LangChain Agent 配置
 """
 import os
 import json
+import subprocess
 from typing import Optional
 
 from langchain.tools import tool
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+
+
+# ── 配置加载 ──────────────────────────────────────────────
+
+
+def _read_windows_env(var_name: str) -> str:
+    for scope in ("Machine", "User"):
+        try:
+            r = subprocess.run(
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-Command",
+                    f'[Environment]::GetEnvironmentVariable("{var_name}","{scope}")',
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                shell=False,
+            )
+            value = r.stdout.strip()
+            if value:
+                return value
+        except Exception:
+            pass
+    return ""
+
+
+def _load_llm_settings() -> tuple[str, str, str]:
+    api_key = (
+        os.environ.get("LLM_API_KEY", "").strip()
+        or os.environ.get("OPENAI_API_KEY", "").strip()
+        or os.environ.get("CARAGENT_LLM_API_KEY", "").strip()
+        or _read_windows_env("CARAGENT_LLM_API_KEY")
+        or _read_windows_env("CUSTOM_OPENAI_API_KEY")
+    )
+    base_url = (
+        os.environ.get("LLM_BASE_URL", "").strip()
+        or os.environ.get("OPENAI_API_BASE", "").strip()
+        or "https://api.deepseek.com/v1"
+    )
+    model = os.environ.get("LLM_MODEL", "").strip() or "deepseek-v4-flash"
+
+    if api_key:
+        os.environ["LLM_API_KEY"] = api_key
+        os.environ["OPENAI_API_KEY"] = api_key
+    os.environ.setdefault("LLM_BASE_URL", base_url)
+    os.environ.setdefault("OPENAI_API_BASE", base_url)
+    os.environ.setdefault("LLM_MODEL", model)
+    return api_key, base_url, model
 
 
 # ── 工具定义 ──────────────────────────────────────────────
@@ -64,13 +115,9 @@ async def llm_translate(text: str, source_lang: str = "auto", target_lang: str =
     # 直接复用 app.py 里已有的 LLM 调用函数
     # 为保持简洁，直接用 httpx 调 DeepSeek
     import httpx
-
-    api_key = os.environ.get("LLM_API_KEY", "")
+    api_key, base_url, model = _load_llm_settings()
     if not api_key:
         return "翻译服务未配置（缺少 LLM_API_KEY）"
-
-    base_url = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com/v1")
-    model = os.environ.get("LLM_MODEL", "deepseek-chat")
 
     prompt = (
         f"请将以下学术文本翻译为{'中文' if target_lang == 'zh' else '英文'}。"
@@ -272,13 +319,10 @@ _agent_instance = None
 
 def get_llm():
     """获取 LLM 实例"""
-    base_url = os.environ.get(
-        "LLM_BASE_URL", "https://api.deepseek.com/v1"
-    )
-    api_key = os.environ.get("LLM_API_KEY", "")
+    api_key, base_url, model = _load_llm_settings()
 
     return ChatOpenAI(
-        model=os.environ.get("LLM_MODEL", "deepseek-chat"),
+        model=model,
         openai_api_key=api_key,
         openai_api_base=base_url,
         temperature=0.3,

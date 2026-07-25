@@ -373,7 +373,17 @@ async def search_openalex(keyword: str, year_start: int = None, year_end: int = 
         try:
             resp = await client.get(f"{OPENALEX_BASE}/works", params=params, headers=headers)
             if resp.status_code == 429:
-                raise HTTPException(status_code=429, detail="API速率限制已达上限（每分钟10次），请稍后重试")
+                try:
+                    err = resp.json()
+                except Exception:
+                    err = {}
+                retry_after = err.get("retryAfter") or resp.headers.get("Retry-After")
+                detail = err.get("message") or "OpenAlex 返回 429，请稍后重试"
+                if "Insufficient budget" in detail or "remaining" in detail.lower():
+                    detail = f"OpenAlex 当日额度已耗尽，需等到午夜 UTC 重置后再试。{detail}"
+                elif retry_after:
+                    detail = f"OpenAlex 触发限流，请在约 {retry_after} 秒后重试。{detail}"
+                raise HTTPException(status_code=429, detail=detail)
             resp.raise_for_status()
             data = resp.json()
         except httpx.TimeoutException:
@@ -1504,13 +1514,56 @@ def _generate_review_template(papers: list[dict], domain: str) -> str:
 # ── LLM 增强综述生成（可选） ────────────────────────────
 
 import os as _os_mod
+import subprocess as _sp_mod
 
-LLM_API_KEY = _os_mod.environ.get("LLM_API_KEY", "")
+def _get_api_key():
+    """优先读取当前进程环境变量，再回退到 Windows Machine/User 环境变量。"""
+    for candidate in (
+        _os_mod.environ.get("LLM_API_KEY", ""),
+        _os_mod.environ.get("OPENAI_API_KEY", ""),
+        _os_mod.environ.get("CARAGENT_LLM_API_KEY", ""),
+    ):
+        if candidate and candidate.strip():
+            key = candidate.strip()
+            _os_mod.environ["LLM_API_KEY"] = key
+            _os_mod.environ["OPENAI_API_KEY"] = key
+            return key
+
+    for var_name in ("CARAGENT_LLM_API_KEY", "CUSTOM_OPENAI_API_KEY"):
+        for scope in ("Machine", "User"):
+            try:
+                r = _sp_mod.run(
+                    ['powershell.exe', '-NoProfile', '-Command',
+                     f'[Environment]::GetEnvironmentVariable("{var_name}","{scope}")'],
+                    capture_output=True, text=True, timeout=5, shell=False)
+                key = r.stdout.strip()
+                if key:
+                    _os_mod.environ["LLM_API_KEY"] = key
+                    _os_mod.environ["OPENAI_API_KEY"] = key
+                    return key
+            except Exception:
+                pass
+    return ""
+
+
+def _get_llm_base_url() -> str:
+    return (
+        _os_mod.environ.get("LLM_BASE_URL", "").strip()
+        or _os_mod.environ.get("OPENAI_API_BASE", "").strip()
+        or "https://api.deepseek.com/v1"
+    )
+
+
+def _get_llm_model() -> str:
+    return _os_mod.environ.get("LLM_MODEL", "").strip() or "deepseek-v4-flash"
+
+LLM_API_KEY = _get_api_key()
 
 
 async def _generate_review_llm(papers: list[dict], domain: str) -> str:
     """使用 LLM 生成综述（当配置了 LLM_API_KEY 时调用），否则回退到模板"""
-    if not LLM_API_KEY:
+    api_key = _get_api_key()
+    if not api_key:
         return _generate_review_template(papers, domain)
 
     papers_summary = []
@@ -1543,13 +1596,13 @@ async def _generate_review_llm(papers: list[dict], domain: str) -> str:
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(
-                "https://api.deepseek.com/v1/chat/completions",
+                f"{_get_llm_base_url()}/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {LLM_API_KEY}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "deepseek-chat",
+                    "model": _get_llm_model(),
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.3,
                     "max_tokens": 4096,
@@ -1656,7 +1709,7 @@ def _to_wsl_path(win_path: str) -> str:
 # 自动检测 Stata 版本（需在 _to_wsl_path 之后调用）
 STATA_EXE = _detect_stata_exe()
 
-LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com/v1")
+LLM_BASE_URL = _get_llm_base_url()
 
 # ── 数据模型 ──────────────────────────────────────────────
 
@@ -1673,7 +1726,7 @@ class StataRunRequest(BaseModel):
     controls: list[str] = []
     m: list[str] = []
     w: str = ""
-    data_columns: list[str]
+    data_columns: list[str] = []
     data_file: str
 
 class StataRunResponse(BaseModel):
@@ -1696,6 +1749,8 @@ class StataCombinationsRequest(BaseModel):
 class StataCombinationsResponse(BaseModel):
     combinations: list[dict]
     best: dict = {}
+    best_result_table: list[dict] = []
+    best_stats: dict = {}
 
 class InterpretRequest(BaseModel):
     result_table: list[dict]
@@ -1766,31 +1821,27 @@ def _build_stata_do(
     lines.append('clear all')
     lines.append('set more off')
     lines.append('set matsize 5000')
-    # 检查需要的外部包
     ext_pkgs = {'reghdfe': 'reghdfe', 'ivreg2': 'ivreg2', 'psmatch2': 'psmatch2',
-                 'csdid': 'csdid', 'eventdd': 'eventdd', 'staggered': 'staggered'}
+                'csdid': 'csdid', 'eventdd': 'eventdd', 'staggered': 'staggered'}
     for cmd, pkg in ext_pkgs.items():
         if command == cmd or (command == "ivreg2" and m and cmd == "ivreg2"):
             lines.append(f'capture which {cmd}')
-            lines.append(f'if _rc {{');
-            lines.append(f'  display as error "注意：{cmd} 需要额外安装，请执行: ssc install {pkg}"');
+            lines.append('if _rc {')
+            lines.append(f'  display as error "注意：{cmd} 需要额外安装，请执行: ssc install {pkg}"')
             lines.append('}')
     lines.append('')
-    # 启用日志记录
+
     win_log = _to_win_path(str(_Path(STATA_WORK_DIR) / f"{output_label}.log"))
     lines.append(f'log using "{win_log.replace(chr(92), chr(47))}", replace text')
-    # CSV文件用 import delimited, DTA文件用 use
     if data_file.lower().endswith('.csv'):
-        # Stata 运行在 Windows 上，需用 Windows 路径
         win_path = _to_win_path(data_file)
         csv_path = win_path.replace('\\', '/')
-        lines.append(f'import delimited "{csv_path}", clear')
+        lines.append(f'import delimited "{csv_path}", clear case(preserve)')
         lines.append('destring _all, replace')
     else:
         lines.append(f'use "{data_file}", clear')
     lines.append('')
 
-    # 设定全局变量
     lines.append(f'global y {y}')
     x_vars = " ".join(x)
     lines.append(f'global xvars {x_vars}')
@@ -1802,29 +1853,46 @@ def _build_stata_do(
         lines.append(f'global wvar {w}')
     lines.append('')
 
-    # 构建回归命令
+    lines.append('local panelvar ""')
+    lines.append('foreach v in code Code CODE firm_id FirmID firmid stock_code stkcd id ID entity_id company_id gvkey {')
+    lines.append("  capture confirm variable `v'")
+    lines.append("  if !_rc & \"`panelvar'\" == \"\" local panelvar `v'")
+    lines.append('}')
+    lines.append('local timevar ""')
+    lines.append('foreach v in year Year YEAR t time Time TIME {')
+    lines.append("  capture confirm variable `v'")
+    lines.append("  if !_rc & \"`timevar'\" == \"\" local timevar `v'")
+    lines.append('}')
+    lines.append('')
+
     depvar = "$y"
     indep_parts = ["$xvars"]
     if controls:
         indep_parts.append("$controls")
     indep_str = " ".join(indep_parts)
+    iv_str = " ".join(m) if m else ""
 
     if command == "reg":
         lines.append(f'reg {depvar} {indep_str}')
     elif command == "reghdfe":
-        absorb_parts = controls if controls else []
-        absorb_str = " ".join(absorb_parts) if absorb_parts else ""
-        fe_indep = x_vars
-        if absorb_str:
-            lines.append(f'reghdfe {depvar} {fe_indep}, absorb({absorb_str})')
+        lines.append('local absorbvars ""')
+        lines.append("if \"`panelvar'\" != \"\" local absorbvars `panelvar'")
+        lines.append("if \"`timevar'\" != \"\" local absorbvars `absorbvars' `timevar'")
+        if controls:
+            lines.append("reghdfe $y $xvars $controls, absorb(`absorbvars')")
         else:
-            lines.append(f'reghdfe {depvar} {fe_indep}, noabsorb')
+            lines.append("reghdfe $y $xvars, absorb(`absorbvars')")
     elif command == "xtreg":
+        lines.append("if \"`panelvar'\" == \"\" | \"`timevar'\" == \"\" {")
+        lines.append('  display as error "xtreg 需要面板变量和时间变量（常见列名如 code/year、id/year）。"')
+        lines.append('  exit 198')
+        lines.append('}')
+        lines.append("xtset `panelvar' `timevar'")
         lines.append(f'xtreg {depvar} {indep_str}, fe')
     elif command == "ivreg2":
         if m:
-            iv_str = " ".join(m)
-            lines.append(f'ivreg2 {depvar} {indep_str} ({controls} = {iv_str})')
+            suffix = ' $controls' if controls else ''
+            lines.append(f'ivreg2 {depvar} ({x_vars} = {iv_str}){suffix}')
         else:
             lines.append(f'ivreg2 {depvar} {indep_str}')
     elif command == "logit":
@@ -1833,12 +1901,17 @@ def _build_stata_do(
         lines.append(f'probit {depvar} {indep_str}')
     elif command == "tobit":
         lines.append(f'tobit {depvar} {indep_str}')
+    elif command == "xtreg_re":
+        lines.append("if \"`panelvar'\" == \"\" | \"`timevar'\" == \"\" {")
+        lines.append('  display as error "xtreg_re 需要面板变量和时间变量（常见列名如 code/year、id/year）。"')
+        lines.append('  exit 198')
+        lines.append('}')
+        lines.append("xtset `panelvar' `timevar'")
+        lines.append(f'xtreg {depvar} {indep_str}, re')
     else:
         lines.append(f'reg {depvar} {indep_str}')
 
     lines.append('')
-
-    # 输出结果
     lines.append('* --- 结果输出 ---')
     lines.append('estimates store m1')
     lines.append('')
@@ -2118,6 +2191,7 @@ async def stata_run(req: StataRunRequest):
         raise HTTPException(status_code=400, detail="请指定因变量 y 和自变量 x")
 
     data_file = str(_Path(STATA_WORK_DIR) / req.data_file)
+    run_name = "run_" + uuid.uuid4().hex[:8]
 
     do_content = _build_stata_do(
         command=req.command,
@@ -2127,9 +2201,10 @@ async def stata_run(req: StataRunRequest):
         m=req.m,
         w=req.w,
         data_file=data_file,
+        output_label=run_name,
     )
 
-    result = await _run_stata_do(do_content, "run_" + uuid.uuid4().hex[:8])
+    result = await _run_stata_do(do_content, run_name)
 
     return StataRunResponse(**result)
 
@@ -2156,6 +2231,8 @@ async def stata_combinations(req: StataCombinationsRequest):
 
     # 执行每个组合
     results = []
+    best_result_table = []
+    best_stats = {}
     rank = 1
 
     # 构建数据文件路径
@@ -2225,6 +2302,8 @@ async def stata_combinations(req: StataCombinationsRequest):
             "w": w,
             "controls": req.controls,
             "method": command,
+            "result_table": table,
+            "stats": stats,
         })
         rank += 1
 
@@ -2239,10 +2318,20 @@ async def stata_combinations(req: StataCombinationsRequest):
         r["rank"] = i + 1
 
     best = results[0] if results else {}
+    if best:
+        best_formula = best.get("formula")
+        best_method = best.get("method")
+        for item in results:
+            if item.get("formula") == best_formula and item.get("method") == best_method:
+                best_result_table = item.get("result_table", [])
+                best_stats = item.get("stats", {})
+                break
 
     return StataCombinationsResponse(
         combinations=results[:50],
         best=best,
+        best_result_table=best_result_table,
+        best_stats=best_stats,
     )
 
 
@@ -2264,7 +2353,8 @@ async def stata_interpret(req: InterpretRequest):
         "tobit": "Tobit 模型",
     }.get(req.method, req.method)
 
-    if not LLM_API_KEY:
+    api_key = _get_api_key()
+    if not api_key:
         return _rule_based_interpret(req.result_table, req.stats, method_name)
 
     # 构建 LLM 提示
@@ -2308,11 +2398,11 @@ async def stata_interpret(req: InterpretRequest):
             resp = await client.post(
                 f"{LLM_BASE_URL}/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {LLM_API_KEY}",
+                    "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "deepseek-chat",
+                    "model": _get_llm_model(),
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.3,
                     "max_tokens": 4096,
@@ -2451,6 +2541,10 @@ async def serve_index():
 
 @app.get("/{filename:path}")
 async def serve_static(filename: str):
+    # Redirect old multi-page URLs (cache cleanup) back to home
+    if filename.endswith(".html") and filename != "index.html":
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/")
     filepath = os.path.join(static_dir, filename)
     if os.path.isfile(filepath):
         return FileResponse(filepath)
