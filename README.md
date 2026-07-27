@@ -37,7 +37,7 @@ Academic Agent 的定位很明确：
 ---
 
 ### 2. 文献检索对话入口
-![Literature Chat Entry](docs/screenshots/literature-chat-entry.png)
+![Stata LLM Interpretation](docs/screenshots/stata-llm-interpretation-full.png)
 
 - 提供聊天式研究需求输入
 - 支持通过自然语言触发文献检索、关键词扩展、结果筛选
@@ -49,7 +49,8 @@ Academic Agent 的定位很明确：
 ---
 
 ### 3. Stata 配置工作台
-![Stata Config](docs/screenshots/stata-config-panel.png)
+![Literature Chat Entry](docs/screenshots/literature-chat-entry.png)
+
 
 - 上传 CSV / Excel 数据文件
 - 配置因变量、自变量、中介变量、控制变量
@@ -79,7 +80,9 @@ Academic Agent 的定位很明确：
 ---
 
 ### 5. LLM 结果解读区
-![Stata LLM Interpretation](docs/screenshots/stata-llm-interpretation-full.png)
+![Stata Config](docs/screenshots/stata-config-panel.png)
+
+
 
 - Stata 执行完成后自动触发解释链路
 - 自动输出：
