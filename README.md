@@ -38,7 +38,7 @@ Academic Agent 的定位很明确：
 
 ### 2. 文献检索对话入口
 ![Stata LLM Interpretation](docs/screenshots/stata-llm-interpretation-full.png)
-
+![Stata LLM Interpretation](docs/screenshots/644e72f255536bdde03bc612961204de.png)
 - 提供聊天式研究需求输入
 - 支持通过自然语言触发文献检索、关键词扩展、结果筛选
 - 更像“学术研究助理”而不是传统数据库检索框
@@ -64,7 +64,7 @@ Academic Agent 的定位很明确：
 ---
 
 ### 4. 组合结果 + Interpret 调试状态
-![Stata Combination + Debug](docs/screenshots/stata-combination-with-debug.png)
+
 
 - 展示组合遍历后的模型结果表
 - 展示 **Interpret 调试状态**
