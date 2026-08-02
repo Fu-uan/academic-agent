@@ -1,0 +1,8 @@
+# Vercel 不需要打包的文件（减小函数体积，避免 250MB 限制）
+docs/
+*.log
+*.png
+*.jpg
+*.jpeg
+*.gif
+图片/
