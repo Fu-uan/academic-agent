@@ -9,29 +9,31 @@
 <style>
 /* ── CSS 变量 ── */
 :root {
-  --primary: #1a56db;
-  --primary-dark: #143fa8;
-  --primary-light: #e8f0fe;
-  --accent: #f59e0b;
-  --bg: #f3f6fc;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --accent: #60a5fa;
+  --bg: #f4f9ff;
+  --bg-soft: #e0edff;
   --card-bg: #ffffff;
   --text: #1e293b;
   --text-secondary: #64748b;
-  --border: #e2e8f0;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --border: #d7e3f4;
+  --success: #6f9f8f;
+  --warning: #c9a86a;
+  --danger: #c96a6a;
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow: 0 1px 3px rgba(37,99,235,0.06), 0 1px 2px rgba(37,99,235,0.04);
+  --shadow-lg: 0 4px 16px rgba(37,99,235,0.10);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: var(--bg);
+  background: linear-gradient(180deg, #eaf2fb 0%, #f4f9ff 40%, #eef5ff 100%);
+  background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
   line-height: 1.6;
@@ -39,12 +41,13 @@ body {
 
 /* ── Header ── */
 .header {
-  background: linear-gradient(135deg, var(--primary), #1e40af);
-  color: #fff;
-  padding: 32px 24px 28px;
+  background: linear-gradient(135deg, #dbe8fb 0%, #eaf2ff 45%, #f4f9ff 100%);
+  color: var(--text);
+  padding: 28px 24px 26px;
   text-align: center;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid rgba(37,99,235,0.10);
 }
 .header::before {
   content: '';
@@ -53,7 +56,7 @@ body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.05) 0%, transparent 50%);
+  background: radial-gradient(circle at 30% 50%, rgba(37,99,235,0.08) 0%, transparent 50%);
   pointer-events: none;
 }
 .header h1 {
@@ -61,12 +64,14 @@ body {
   font-weight: 700;
   margin-bottom: 6px;
   letter-spacing: 1px;
+  color: #1e3a8a;
 }
 .header h1 i { margin-right: 10px; }
 .header p {
   font-size: 14px;
-  opacity: 0.85;
-  font-weight: 300;
+  opacity: 0.8;
+  font-weight: 400;
+  color: #334e8a;
 }
 
 /* ── Container ── */
@@ -317,11 +322,67 @@ body {
 /* ── Module Selector ── */
 .module-selector {
   text-align: center;
-  padding: 80px 0 40px;
+  padding: 40px 0 40px;
   min-height: 60vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+/* ── Landing Hero（开启学术之旅入口）── */
+.landing-hero {
+  max-width: 760px;
+  margin: 0 auto 36px;
+  padding: 0 16px;
+}
+.landing-hero h2 {
+  font-size: 42px;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin-bottom: 14px;
+  letter-spacing: 1px;
+  line-height: 1.3;
+}
+.landing-hero h2 .grad {
+  background: linear-gradient(90deg, #1d4ed8, #3b82f6, #60a5fa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.landing-hero p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+  line-height: 1.7;
+}
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 44px;
+  background: #24292f;
+  color: #fff;
+  border: none;
+  border-radius: 40px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: 0 8px 24px rgba(36,41,47,0.28);
+}
+.cta-btn i { font-size: 18px; }
+.cta-btn:hover {
+  background: #1a56db;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(26,86,219,0.35);
+}
+.cta-btn:active { transform: scale(0.97); }
+.hero-sub {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  opacity: 0.75;
 }
 .module-cards {
   display: grid;
@@ -1162,6 +1223,170 @@ body {
   .chart-grid { grid-template-columns: 1fr; }
   .chart-box { height: 300px; }
 }
+
+/* ═══════════════════════════════════════════════
+   主题覆盖层 · 蓝色渐变学术风
+   基于参考图反推：浅蓝白渐变底 / 蓝色渐变 Header / 深色 CTA
+   低饱和 · 极简 · 大留白 · 细边框 · 轻阴影
+   ═══════════════════════════════════════════════ */
+
+/* ── 全局底色 ── */
+body {
+  background: linear-gradient(180deg, #eaf2fb 0%, #f4f9ff 40%, #eef5ff 100%);
+  background-attachment: fixed;
+  color: var(--text);
+}
+
+/* ── Header：浅色版（蓝色渐变 + 深蓝字） ── */
+.header {
+  background: linear-gradient(135deg, #dbe8fb 0%, #eaf2ff 45%, #f4f9ff 100%);
+  color: var(--text);
+  border-bottom: 1px solid rgba(37,99,235,0.10);
+  padding: 28px 24px 26px;
+}
+.header::before {
+  background: radial-gradient(circle at 75% 20%, rgba(37,99,235,0.08) 0%, transparent 55%);
+}
+.header h1 { color: var(--primary-dark); }
+.header h1 i { color: var(--primary); }
+.header p { color: var(--text-secondary); opacity: 1; }
+
+/* ── 卡片统一样式：白底 + 细边框 + 轻阴影 ── */
+.search-card,
+.chat-card,
+.analysis-header,
+.module-card,
+.result-card,
+.paper-card,
+.stata-card,
+.preview-card,
+.upload-zone,
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+}
+
+/* ── 模块选择卡片 ── */
+.module-card {
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  background: #ffffff;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.module-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(37,99,235,0.12);
+  border-color: var(--primary);
+}
+.module-card .module-icon {
+  color: var(--primary);
+  background: var(--primary-light);
+  width: 72px; height: 72px;
+  line-height: 72px;
+  border-radius: 20px;
+  margin: 0 auto 18px;
+  font-size: 30px;
+}
+.module-card .module-badge {
+  background: var(--bg-soft);
+  color: var(--primary-dark);
+}
+
+/* ── 按钮：主按钮深蓝紫，次级按钮描边 ── */
+.btn-search,
+#chatSendBtn,
+.btn-primary,
+.btn-export,
+#runStataBtn {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: #fff;
+}
+.btn-search:hover,
+#chatSendBtn:hover,
+.btn-primary:hover,
+.btn-export:hover,
+#runStataBtn:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+.btn-db.active,
+.btn-journal.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.btn-db:hover,
+.btn-journal:hover,
+.btn-year:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-year.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ── 搜索框 ── */
+.search-input {
+  background: #fafbfc;
+  border: 1px solid var(--border);
+}
+.search-input:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+}
+
+/* ── 上传区 ── */
+.upload-zone {
+  border: 1.5px dashed var(--primary);
+  background: var(--primary-light);
+}
+
+/* ── 表格 ── */
+table { border-collapse: collapse; }
+th {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+td, th {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+  font-size: 13px;
+}
+tr:hover td { background: #f4f9ff; }
+
+/* ── 图表容器 ── */
+.chart-box {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ── 滚动条（克制风） ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb {
+  background: #c8c8da;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── 返回按钮 ── */
+.btn-back {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.btn-back:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 </style>
 <body>
 
@@ -1173,8 +1398,15 @@ body {
 
 <div class="container">
 
-<!-- Module Selector -->
+<!-- Module Selector（落地页） -->
 <div class="module-selector" id="moduleSelector">
+  <!-- Landing Hero -->
+  <div class="landing-hero">
+    <h2>让学术研究，从此<br><span class="grad">高效启程</span></h2>
+    <p>多源学术检索 · LLM 智能分析 · 标准引文导出 · 综述生成 · Stata 实证，一站式覆盖从文献到实证的完整研究流程</p>
+    <button class="cta-btn" onclick="selectModule('literature')"><i class="fas fa-rocket"></i> 开启学术之旅</button>
+    <div class="hero-sub"><i class="fas fa-arrow-down"></i> 或点击下方功能卡片直接进入对应模块</div>
+  </div>
   <div class="module-cards">
     <div class="module-card" onclick="selectModule('literature')">
       <div class="module-icon"><i class="fas fa-book-open"></i></div>

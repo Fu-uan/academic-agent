@@ -35,3 +35,7 @@ start.bat
 # Hermes
 .hermes/
 .hermes_runtime/
+
+# local backups & reference shots
+static/*.bak-*
+图片/
