@@ -1,8 +1,9 @@
 # Academic Agent · 学术智能体
 
 > 面向经管社科研究场景的一站式学术工作台：**文献检索 → 文献综述 → Stata 实证分析 → LLM 结果解读 → 论文导出**
-
+<img width="1418" height="746" alt="image" src="https://github.com/user-attachments/assets/e72c455b-2173-43a9-ab6b-d22a35558869" />
 ![Home](docs/screenshots/home-module-selector.png)
+
 
 ## 项目简介
 
